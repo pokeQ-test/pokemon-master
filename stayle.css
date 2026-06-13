@@ -1,0 +1,102 @@
+body{
+    margin:0;
+    font-family:"Yu Gothic",sans-serif;
+    background:#f5f5f5;
+}
+
+.container{
+    max-width:430px;
+    margin:auto;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+    color:white;
+    background:#ef5350;
+    padding:20px;
+    border-radius:20px;
+}
+
+.stats{
+    background:white;
+    padding:15px;
+    border-radius:15px;
+    margin-top:15px;
+}
+
+.card{
+    background:white;
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+}
+
+img{
+    width:250px;
+    height:250px;
+    object-fit:contain;
+}
+
+.silhouette{
+    filter:brightness(0);
+}
+
+input{
+    width:90%;
+    padding:12px;
+    margin-top:15px;
+}
+
+button{
+    width:100%;
+    margin-top:15px;
+    padding:15px;
+    background:#ef5350;
+    color:white;
+    border:none;
+    border-radius:10px;
+}
+
+#result{
+    margin-top:15px;
+    font-size:20px;
+    font-weight:bold;
+}
+#dexContainer{
+    background:white;
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+}
+
+#dexList{
+    max-height:500px;
+    overflow-y:auto;
+    margin-top:15px;
+}
+
+.dex-item{
+    padding:8px;
+    border-bottom:1px solid #eee;
+}
+#timer{
+    font-size:24px;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:15px;
+}
+
+#achievementContainer{
+    background:white;
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+}
+
+.achievement-item{
+    padding:10px;
+    border-bottom:1px solid #eee;
+}
+

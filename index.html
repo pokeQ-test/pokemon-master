@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ポケモン図鑑マスター</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container" id="mainPage">
+
+<h1>⚡ ポケモン図鑑マスター</h1>
+
+<div class="stats">
+<button onclick="showDex()">
+📖 図鑑を見る
+</button>
+
+<button onclick="showAchievements()">
+🏆 実績を見る
+</button>
+
+<div id="dexContainer" style="display:none;">
+    <h2>ポケモン図鑑</h2>
+
+    <button onclick="hideDex()">
+        閉じる
+    </button>
+
+    <div id="dexList"></div>
+</div>
+<div id="progress">図鑑完成率 0 / 1025</div>
+<div id="achievement">🏆 実績 0個</div>
+</div>
+
+<label class="silhouette-option">
+<input type="checkbox" id="silhouetteMode">
+シルエットモード
+</label>
+
+<div class="filters">
+    <label>
+        世代
+        <select id="generationFilter">
+            <option value="all">すべて</option>
+            <option value="1">第1世代</option>
+            <option value="2">第2世代</option>
+            <option value="3">第3世代</option>
+            <option value="4">第4世代</option>
+            <option value="5">第5世代</option>
+            <option value="6">第6世代</option>
+            <option value="7">第7世代</option>
+            <option value="8">第8世代</option>
+            <option value="9">第9世代</option>
+        </select>
+    </label>
+
+    <label>
+        タイプ
+        <select id="typeFilter">
+            <option value="all">すべて</option>
+            <option value="normal">ノーマル</option>
+            <option value="fire">ほのお</option>
+            <option value="water">みず</option>
+            <option value="electric">でんき</option>
+            <option value="grass">くさ</option>
+            <option value="ice">こおり</option>
+            <option value="fighting">かくとう</option>
+            <option value="poison">どく</option>
+            <option value="ground">じめん</option>
+            <option value="flying">ひこう</option>
+            <option value="psychic">エスパー</option>
+            <option value="bug">むし</option>
+            <option value="rock">いわ</option>
+            <option value="ghost">ゴースト</option>
+            <option value="dragon">ドラゴン</option>
+            <option value="dark">あく</option>
+            <option value="steel">はがね</option>
+            <option value="fairy">フェアリー</option>
+        </select>
+    </label>
+
+    <label>
+        問題数
+        <select id="questionCountFilter">
+            <option value="all">すべて</option>
+            <option value="10">10問</option>
+            <option value="20">20問</option>
+            <option value="30">30問</option>
+        </select>
+    </label>
+</div>
+
+<div class="card">
+
+<div id="questionProgress">
+問題 0 / 10
+</div>
+
+<div id="timer">
+⏰ スタートを押してください
+</div>
+
+<img id="pokemonImage">
+
+<input
+type="text"
+id="answer"
+placeholder="ポケモン名を入力">
+
+<button id="quizActionButton" onclick="handleQuizAction()">
+スタート
+</button>
+
+<div id="result"></div>
+
+</div>
+
+</div>
+
+<div class="container page" id="achievementPage" style="display:none;">
+    <h1>🏆 実績一覧</h1>
+
+    <button onclick="hideAchievements()">
+        クイズに戻る
+    </button>
+
+    <div id="achievementList"></div>
+</div>
+
+<div class="container page result-page" id="quizResultPage" style="display:none;">
+    <div id="quizResultCard" class="result-card">
+        <div id="resultFace" class="result-face">🎉</div>
+        <h1 id="resultTitle">結果発表</h1>
+        <div id="resultPokemonImages" class="result-pokemon-images"></div>
+        <div id="resultScore"></div>
+        <p id="resultMessage"></p>
+
+        <button onclick="backToQuizFromResult()">
+            クイズに戻る
+        </button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
