@@ -24,15 +24,6 @@
 🏆 実績を見る
 </button>
 
-<div id="dexContainer" style="display:none;">
-    <h2>ポケモン図鑑</h2>
-
-    <button onclick="hideDex()">
-        閉じる
-    </button>
-
-    <div id="dexList"></div>
-</div>
 <div id="progress">図鑑完成率 0 / 1025</div>
 <div id="achievement">🏆 実績 0個</div>
 </div>
@@ -120,6 +111,46 @@ placeholder="ポケモン名を入力">
 
 </div>
 
+</div>
+
+<div class="container page" id="dexPage" style="display:none;">
+    <h1>📖 ポケモン図鑑</h1>
+
+    <button onclick="hideDex()">
+        クイズに戻る
+    </button>
+
+    <div id="dexList"></div>
+</div>
+
+<div class="container page" id="dexDetailPage" style="display:none;">
+    <h1 id="dexDetailTitle">ポケモン詳細</h1>
+
+    <button onclick="backToDexList()">
+        図鑑一覧に戻る
+    </button>
+
+    <div class="dex-detail-card">
+        <img id="dexDetailImage" class="dex-detail-image">
+        <div id="dexDetailNumber" class="dex-detail-number"></div>
+        <div id="dexDetailFoundDate" class="dex-detail-date"></div>
+        <p id="dexDetailDescription" class="dex-detail-description"></p>
+        <div class="dex-stats-section">
+            <h2>種族値・Lv50実数値</h2>
+            <div class="dex-stats-note">
+                Lv50実数値は個体値31・努力値0・性格補正なし
+            </div>
+            <div id="dexDetailStats"></div>
+        </div>
+        <div class="dex-detail-nav">
+            <button id="dexPrevButton" onclick="moveDexDetail(-1)">
+                ← 前へ
+            </button>
+            <button id="dexNextButton" onclick="moveDexDetail(1)">
+                次へ →
+            </button>
+        </div>
+    </div>
 </div>
 
 <div class="container page" id="achievementPage" style="display:none;">

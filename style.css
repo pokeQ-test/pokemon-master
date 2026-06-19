@@ -111,13 +111,6 @@ button:disabled{
     font-size:20px;
     font-weight:bold;
 }
-#dexContainer{
-    background:white;
-    margin-top:20px;
-    padding:20px;
-    border-radius:15px;
-}
-
 #dexList{
     max-height:500px;
     overflow-y:auto;
@@ -125,8 +118,121 @@ button:disabled{
 }
 
 .dex-item{
-    padding:8px;
+    width:100%;
+    padding:12px;
+    margin-top:8px;
+    background:white;
+    color:#333;
+    border:1px solid #eee;
+    border-radius:10px;
+    text-align:left;
+}
+
+.dex-item.locked{
+    color:#999;
+    background:#f7f7f7;
+}
+
+.dex-detail-card{
+    background:white;
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+}
+
+.dex-detail-image{
+    width:240px;
+    height:240px;
+    object-fit:contain;
+}
+
+.dex-detail-number,
+.dex-detail-date{
+    margin-top:10px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.dex-detail-description{
+    margin-top:18px;
+    line-height:1.7;
+    text-align:left;
+}
+
+.dex-stats-section{
+    margin-top:20px;
+    text-align:left;
+}
+
+.dex-stats-section h2{
+    margin:0 0 8px;
+    padding:10px;
+    border-radius:10px;
+    background:#ef5350;
+    color:white;
+    font-size:18px;
+    text-align:center;
+}
+
+.dex-stats-note{
+    margin-bottom:10px;
+    color:#666;
+    font-size:13px;
+    text-align:center;
+}
+
+.dex-stat-row{
+    display:grid;
+    grid-template-columns:72px 44px 1fr 54px;
+    align-items:center;
+    gap:8px;
+    padding:8px 0;
     border-bottom:1px solid #eee;
+    font-size:14px;
+}
+
+.dex-stat-name{
+    font-weight:bold;
+}
+
+.dex-stat-base,
+.dex-stat-real{
+    text-align:right;
+    font-weight:bold;
+}
+
+.dex-stat-bar{
+    height:12px;
+    overflow:hidden;
+    border-radius:999px;
+    background:#eee;
+}
+
+.dex-stat-fill{
+    height:100%;
+    border-radius:999px;
+    background:#42a5f5;
+}
+
+.dex-stat-total{
+    margin-top:10px;
+    padding:10px;
+    border-radius:10px;
+    background:#f7f7f7;
+    font-weight:bold;
+    text-align:center;
+}
+
+.dex-detail-nav{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:15px;
+}
+
+.dex-detail-nav button{
+    margin-top:0;
 }
 #timer{
     font-size:24px;

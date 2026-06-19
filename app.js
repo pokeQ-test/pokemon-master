@@ -10,11 +10,17 @@ let quizFinished = false;
 let quizPokemonIds = [];
 let usedPokemonIds = [];
 let quizAction = "start";
+let currentDexDetailId = 1;
 
 const foundPokemon =
 JSON.parse(
 localStorage.getItem("foundPokemon")
 ) || [];
+
+const foundPokemonMeta =
+JSON.parse(
+localStorage.getItem("foundPokemonMeta")
+) || {};
 
 const generationRanges = {
     1: [1, 151],
@@ -41,6 +47,170 @@ function normalizePokemonName(text){
                 ch.charCodeAt(0) + 0x60
             )
         );
+}
+
+function getTodayText(){
+
+    const parts =
+    new Intl.DateTimeFormat(
+        "ja-JP",
+        {
+            timeZone:"Asia/Tokyo",
+            year:"numeric",
+            month:"2-digit",
+            day:"2-digit"
+        }
+    ).formatToParts(new Date());
+
+    const year =
+    parts.find(part => part.type === "year").value;
+
+    const month =
+    parts.find(part => part.type === "month").value;
+
+    const day =
+    parts.find(part => part.type === "day").value;
+
+    return `${year}-${month}-${day}`;
+}
+
+function getPokemonImageUrl(pokemonId){
+
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+}
+
+async function fetchPokemonSpecies(pokemonId){
+
+    const response =
+    await fetch(
+        `https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`
+    );
+
+    return response.json();
+}
+
+async function fetchPokemonData(pokemonId){
+
+    const response =
+    await fetch(
+        `https://pokeapi.co/api/v2/pokemon/${pokemonId}`
+    );
+
+    return response.json();
+}
+
+function getJapanesePokemonName(species){
+
+    const japanese =
+    species.names.find(
+        name => name.language.name === "ja"
+    );
+
+    return japanese
+    ? japanese.name
+    : species.name;
+}
+
+function getJapaneseDescription(species){
+
+    const entry =
+    species.flavor_text_entries.find(
+        item => item.language.name === "ja"
+    );
+
+    return entry
+    ? entry.flavor_text.replace(/\s+/g," ")
+    : "説明文が見つかりませんでした。";
+}
+
+const statLabels = {
+    hp:"HP",
+    attack:"攻撃",
+    defense:"防御",
+    "special-attack":"特攻",
+    "special-defense":"特防",
+    speed:"素早さ"
+};
+
+function calculateLevel50Stat(statName,baseStat){
+
+    const level = 50;
+    const individualValue = 31;
+    const effortValue = 0;
+
+    if(statName === "hp"){
+        return Math.floor(
+            ((baseStat * 2 + individualValue + Math.floor(effortValue / 4)) * level) / 100
+        ) + level + 10;
+    }
+
+    return Math.floor(
+        ((baseStat * 2 + individualValue + Math.floor(effortValue / 4)) * level) / 100
+    ) + 5;
+}
+
+function createStatsHtml(pokemonData){
+
+    const rows =
+    pokemonData.stats.map(item => {
+
+        const statName =
+        item.stat.name;
+
+        const baseStat =
+        item.base_stat;
+
+        const level50Stat =
+        calculateLevel50Stat(
+            statName,
+            baseStat
+        );
+
+        const barWidth =
+        Math.min(
+            100,
+            Math.round(baseStat / 255 * 100)
+        );
+
+        return `
+        <div class="dex-stat-row">
+            <div class="dex-stat-name">${statLabels[statName]}</div>
+            <div class="dex-stat-base">${baseStat}</div>
+            <div class="dex-stat-bar">
+                <div class="dex-stat-fill" style="width:${barWidth}%"></div>
+            </div>
+            <div class="dex-stat-real">${level50Stat}</div>
+        </div>
+        `;
+    }).join("");
+
+    const total =
+    pokemonData.stats.reduce(
+        (sum,item) => sum + item.base_stat,
+        0
+    );
+
+    return `
+    <div class="dex-stat-row">
+        <div class="dex-stat-name">項目</div>
+        <div class="dex-stat-base">種族値</div>
+        <div></div>
+        <div class="dex-stat-real">Lv50</div>
+    </div>
+    ${rows}
+    <div class="dex-stat-total">
+        種族値合計 ${total}
+    </div>
+    `;
+}
+
+function hideAllPages(){
+
+    document.getElementById("mainPage").style.display = "none";
+    document.getElementById("dexPage").style.display = "none";
+    document.getElementById("dexDetailPage").style.display = "none";
+    document.getElementById("achievementPage").style.display = "none";
+    document.getElementById("quizResultPage").style.display = "none";
 }
 
 function createIdRange(start,end){
@@ -245,28 +415,18 @@ async function loadPokemon(){
     currentPokemonId = pokemonId;
     usedPokemonIds.push(pokemonId);
 
-    const response =
-    await fetch(
-    `https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`
-    );
-
     const species =
-    await response.json();
+    await fetchPokemonSpecies(pokemonId);
 
     if(requestId !== loadRequestId){
         return;
     }
 
-    const japanese =
-    species.names.find(
-    n => n.language.name === "ja"
-    );
-
     currentPokemon =
-    japanese ? japanese.name : species.name;
+    getJapanesePokemonName(species);
 
     const image =
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+    getPokemonImageUrl(pokemonId);
 
     const img =
     document.getElementById("pokemonImage");
@@ -477,15 +637,16 @@ function showQuizResult(){
     document.getElementById("resultMessage")
     .textContent = resultInfo.message;
 
-    document.getElementById("mainPage").style.display = "none";
-    document.getElementById("achievementPage").style.display = "none";
+    hideAllPages();
+
     resultPage.style.display = "flex";
     location.hash = "result";
 }
 
 function backToQuizFromResult(){
 
-    document.getElementById("quizResultPage").style.display = "none";
+    hideAllPages();
+
     document.getElementById("mainPage").style.display = "block";
 
     if(location.hash === "#result"){
@@ -533,9 +694,18 @@ function checkAnswer(){
             currentPokemonId
             );
 
+            foundPokemonMeta[currentPokemonId] = {
+                firstFoundAt:getTodayText()
+            };
+
             localStorage.setItem(
             "foundPokemon",
             JSON.stringify(foundPokemon)
+            );
+
+            localStorage.setItem(
+            "foundPokemonMeta",
+            JSON.stringify(foundPokemonMeta)
             );
         }
 
@@ -675,9 +845,13 @@ event => {
 resetQuestion("⏰ スタートを押してください");
 async function showDex(){
 
+    hideAllPages();
+
     document.getElementById(
-        "dexContainer"
+        "dexPage"
     ).style.display = "block";
+
+    location.hash = "dex";
 
     const dexList =
     document.getElementById(
@@ -693,40 +867,28 @@ async function showDex(){
 
         if(foundPokemon.includes(i)){
 
-            const response =
-            await fetch(
-            `https://pokeapi.co/api/v2/pokemon-species/${i}`
-            );
-
             const species =
-            await response.json();
-
-            const japanese =
-            species.names.find(
-            n => n.language.name === "ja"
-            );
+            await fetchPokemonSpecies(i);
 
             const name =
-            japanese
-            ? japanese.name
-            : species.name;
+            getJapanesePokemonName(species);
 
             html += `
-            <div class="dex-item">
+            <button class="dex-item" onclick="showDexDetail(${i})">
             No.${String(i).padStart(4,"0")}
             ${name}
             ✅
-            </div>
+            </button>
             `;
 
         }else{
 
             html += `
-            <div class="dex-item">
+            <button class="dex-item locked" onclick="showDexDetail(${i})">
             No.${String(i).padStart(4,"0")}
             ????????
             ❓
-            </div>
+            </button>
             `;
         }
     }
@@ -736,16 +898,156 @@ async function showDex(){
 
 function hideDex(){
 
+    hideAllPages();
+
     document.getElementById(
-        "dexContainer"
-    ).style.display = "none";
+        "mainPage"
+    ).style.display = "block";
+
+    if(location.hash === "#dex"){
+        history.pushState(
+            "",
+            document.title,
+            location.pathname
+        );
+    }
+}
+
+async function showDexDetail(pokemonId){
+
+    currentDexDetailId = pokemonId;
+
+    hideAllPages();
+
+    document.getElementById(
+        "dexDetailPage"
+    ).style.display = "block";
+
+    location.hash = `dex-${pokemonId}`;
+
+    const isFound =
+    foundPokemon.includes(pokemonId);
+
+    const detailImage =
+    document.getElementById(
+        "dexDetailImage"
+    );
+
+    detailImage.src =
+    getPokemonImageUrl(pokemonId);
+
+    if(isFound){
+        detailImage.classList.remove("silhouette");
+    }else{
+        detailImage.classList.add("silhouette");
+    }
+
+    document.getElementById(
+        "dexDetailNumber"
+    ).textContent =
+    `No.${String(pokemonId).padStart(4,"0")}`;
+
+    updateDexNavButtons();
+
+    const foundDate =
+    foundPokemonMeta[pokemonId]
+    ? foundPokemonMeta[pokemonId].firstFoundAt
+    : "記録なし";
+
+    document.getElementById(
+        "dexDetailFoundDate"
+    ).textContent =
+    `初めて答えた日: ${isFound ? foundDate : "未発見"}`;
+
+    if(!isFound){
+
+        document.getElementById(
+            "dexDetailTitle"
+        ).textContent =
+        "????????";
+
+        document.getElementById(
+            "dexDetailDescription"
+        ).textContent =
+        "まだクイズで正解していないポケモンです。";
+
+        document.getElementById(
+            "dexDetailStats"
+        ).innerHTML =
+        `<div class="dex-stat-total">未発見のため非表示</div>`;
+
+        return;
+    }
+
+    document.getElementById(
+        "dexDetailTitle"
+    ).textContent =
+    "読み込み中...";
+
+    const species =
+    await fetchPokemonSpecies(pokemonId);
+
+    document.getElementById(
+        "dexDetailTitle"
+    ).textContent =
+    getJapanesePokemonName(species);
+
+    document.getElementById(
+        "dexDetailDescription"
+    ).textContent =
+    getJapaneseDescription(species);
+
+    document.getElementById(
+        "dexDetailStats"
+    ).innerHTML =
+    "種族値を読み込み中...";
+
+    const pokemonData =
+    await fetchPokemonData(pokemonId);
+
+    document.getElementById(
+        "dexDetailStats"
+    ).innerHTML =
+    createStatsHtml(pokemonData);
+}
+
+function backToDexList(){
+
+    hideAllPages();
+
+    document.getElementById(
+        "dexPage"
+    ).style.display = "block";
+
+    location.hash = "dex";
+}
+
+function updateDexNavButtons(){
+
+    document.getElementById(
+        "dexPrevButton"
+    ).disabled = currentDexDetailId <= 1;
+
+    document.getElementById(
+        "dexNextButton"
+    ).disabled = currentDexDetailId >= 1025;
+}
+
+function moveDexDetail(direction){
+
+    const nextId =
+    currentDexDetailId + direction;
+
+    if(nextId < 1 || nextId > 1025){
+        return;
+    }
+
+    showDexDetail(nextId);
 }
 
 function showAchievements(){
 
-    document.getElementById(
-        "mainPage"
-    ).style.display = "none";
+    hideAllPages();
 
     document.getElementById(
         "achievementPage"
@@ -809,9 +1111,7 @@ function showAchievements(){
 
 function hideAchievements(){
 
-    document.getElementById(
-        "achievementPage"
-    ).style.display = "none";
+    hideAllPages();
 
     document.getElementById(
         "mainPage"
