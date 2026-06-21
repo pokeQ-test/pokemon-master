@@ -11,6 +11,8 @@ let quizPokemonIds = [];
 let usedPokemonIds = [];
 let quizAction = "start";
 let currentDexDetailId = 1;
+let currentCombo = 0;
+let comboToastTimer;
 
 const foundPokemon =
 JSON.parse(
@@ -35,6 +37,43 @@ const generationRanges = {
 };
 
 const typePokemonCache = {};
+
+const comboRewards = {
+    3:{
+        title:"3問連続正解！",
+        message:"ナンジャモが応援している！",
+        images:[
+            {
+                name:"ナンジャモ",
+                url:"https://www.pokemon.co.jp/ex/sv/assets/img/character/221014_01/visual.png"
+            }
+        ]
+    },
+    5:{
+        title:"5問連続正解！",
+        message:"カナリィが盛り上げてくれた！",
+        images:[
+            {
+                name:"カナリィ",
+                url:"https://www.pokemon.co.jp/ex/legends_z-a/assets/img/characters/251106_01/ill_01.webp"
+            }
+        ]
+    },
+    10:{
+        title:"10問連続正解！",
+        message:"リーリエとユウリが祝福している！",
+        images:[
+            {
+                name:"リーリエ",
+                url:"https://www.inside-games.jp/imgs/zoom/1490192.png"
+            },
+            {
+                name:"ユウリ",
+                url:"https://img.altema.jp/pokemoncard/card/icon/12577.jpg"
+            }
+        ]
+    }
+};
 
 function normalizePokemonName(text){
 
@@ -482,15 +521,18 @@ function resetQuestion(message){
 
     loadRequestId++;
     clearInterval(timer);
+    clearTimeout(comboToastTimer);
     isQuestionActive = false;
     answeredQuestions = 0;
     correctAnswers = 0;
+    currentCombo = 0;
     quizFinished = false;
     quizPokemonIds = [];
     usedPokemonIds = [];
     currentPokemon = "";
     currentPokemonId = 0;
 
+    document.getElementById("comboToast").style.display = "none";
     document.getElementById("answer").value = "";
     document.getElementById("result").textContent = "";
     document.getElementById("timer").textContent = message;
@@ -596,6 +638,48 @@ function createPokemonImageHtml(pokemonIds){
         alt="結果ポケモン">
     `)
     .join("");
+}
+
+function showComboReward(comboCount){
+
+    const reward =
+    comboRewards[comboCount];
+
+    if(!reward){
+        return;
+    }
+
+    clearTimeout(comboToastTimer);
+
+    document.getElementById(
+        "comboTitle"
+    ).textContent =
+    reward.title;
+
+    document.getElementById(
+        "comboMessage"
+    ).textContent =
+    reward.message;
+
+    document.getElementById(
+        "comboImages"
+    ).innerHTML =
+    reward.images.map(item => `
+        <img
+        src="${item.url}"
+        alt="${item.name}"
+        onerror="this.style.display='none'">
+    `).join("");
+
+    const comboToast =
+    document.getElementById("comboToast");
+
+    comboToast.style.display = "flex";
+
+    comboToastTimer =
+    setTimeout(() => {
+        comboToast.style.display = "none";
+    },1800);
 }
 
 function showQuizResult(){
@@ -711,6 +795,8 @@ function checkAnswer(){
 
         updateProgress();
         correctAnswers++;
+        currentCombo++;
+        showComboReward(currentCombo);
 
         finishQuestion();
 
@@ -718,6 +804,7 @@ function checkAnswer(){
 
         clearInterval(timer);
         isQuestionActive = false;
+        currentCombo = 0;
 
         document.getElementById("result")
         .textContent =
@@ -772,6 +859,7 @@ function startTimer(){
 
             clearInterval(timer);
             isQuestionActive = false;
+            currentCombo = 0;
 
             document.getElementById(
                 "result"

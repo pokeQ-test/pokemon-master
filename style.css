@@ -344,3 +344,61 @@ button:disabled{
     background:#eef1f7;
 }
 
+.combo-toast{
+    position:fixed;
+    inset:0;
+    z-index:20;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,0.35);
+}
+
+.combo-card{
+    width:min(360px,100%);
+    padding:20px;
+    border:3px solid #ffd54f;
+    border-radius:20px;
+    background:white;
+    text-align:center;
+    box-shadow:0 14px 35px rgba(0,0,0,0.28);
+    animation:comboPop 0.25s ease-out;
+}
+
+.combo-title{
+    color:#ef5350;
+    font-size:26px;
+    font-weight:bold;
+}
+
+.combo-images{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin:12px 0;
+}
+
+.combo-images img{
+    width:120px;
+    height:150px;
+    object-fit:contain;
+}
+
+.combo-message{
+    font-size:18px;
+    font-weight:bold;
+}
+
+@keyframes comboPop{
+    from{
+        transform:scale(0.86);
+        opacity:0;
+    }
+
+    to{
+        transform:scale(1);
+        opacity:1;
+    }
+}
