@@ -2,6 +2,8 @@ let timer;
 let timeLeft = 20;
 let currentPokemon = "";
 let currentPokemonId = 0;
+let currentAcceptedAnswers = [];
+let currentAnswerPokemonIds = [];
 let loadRequestId = 0;
 let isQuestionActive = false;
 let answeredQuestions = 0;
@@ -37,6 +39,9 @@ const generationRanges = {
 };
 
 const typePokemonCache = {};
+const speciesCache = {};
+const evolutionChainCache = {};
+const evolutionRelationCache = {};
 
 const comboRewards = {
     3:{
@@ -120,12 +125,23 @@ function getPokemonImageUrl(pokemonId){
 
 async function fetchPokemonSpecies(pokemonId){
 
+    if(speciesCache[pokemonId]){
+        return speciesCache[pokemonId];
+    }
+
     const response =
     await fetch(
         `https://pokeapi.co/api/v2/pokemon-species/${pokemonId}`
     );
 
-    return response.json();
+    if(!response.ok){
+        throw new Error("ポケモン情報を取得できませんでした");
+    }
+
+    const species = await response.json();
+    speciesCache[pokemonId] = species;
+
+    return species;
 }
 
 async function fetchPokemonData(pokemonId){
@@ -148,6 +164,142 @@ function getJapanesePokemonName(species){
     return japanese
     ? japanese.name
     : species.name;
+}
+
+function getPokemonIdFromUrl(url){
+
+    const match = url.match(/\/(\d+)\/?$/);
+
+    return match
+    ? Number(match[1])
+    : 0;
+}
+
+async function fetchEvolutionChain(url){
+
+    if(evolutionChainCache[url]){
+        return evolutionChainCache[url];
+    }
+
+    const response = await fetch(url);
+
+    if(!response.ok){
+        throw new Error("進化情報を取得できませんでした");
+    }
+
+    const data = await response.json();
+    evolutionChainCache[url] = data.chain;
+
+    return data.chain;
+}
+
+function findEvolutionRelation(node,targetId,parentId = null){
+
+    const nodeId =
+    getPokemonIdFromUrl(node.species.url);
+
+    if(nodeId === targetId){
+        return {
+            fromId:parentId,
+            toIds:node.evolves_to
+            .map(child => getPokemonIdFromUrl(child.species.url))
+            .filter(id => id >= 1 && id <= 1025)
+        };
+    }
+
+    for(const child of node.evolves_to){
+        const relation =
+        findEvolutionRelation(child,targetId,nodeId);
+
+        if(relation){
+            return relation;
+        }
+    }
+
+    return null;
+}
+
+async function getEvolutionRelation(pokemonId){
+
+    if(evolutionRelationCache[pokemonId]){
+        return evolutionRelationCache[pokemonId];
+    }
+
+    const species =
+    await fetchPokemonSpecies(pokemonId);
+
+    const chain =
+    await fetchEvolutionChain(species.evolution_chain.url);
+
+    const relation =
+    findEvolutionRelation(chain,pokemonId) || {
+        fromId:null,
+        toIds:[]
+    };
+
+    evolutionRelationCache[pokemonId] = relation;
+
+    return relation;
+}
+
+function getSelectedQuizMode(){
+
+    return document.getElementById(
+        "quizModeFilter"
+    ).value;
+}
+
+async function createQuestionData(pokemonId){
+
+    const species =
+    await fetchPokemonSpecies(pokemonId);
+
+    const pokemonName =
+    getJapanesePokemonName(species);
+
+    const mode =
+    getSelectedQuizMode();
+
+    if(mode === "name"){
+        return {
+            pokemonId,
+            pokemonName,
+            questionText:"このポケモンはだれ？",
+            acceptedAnswers:[pokemonName],
+            answerPokemonIds:[pokemonId]
+        };
+    }
+
+    const relation =
+    await getEvolutionRelation(pokemonId);
+
+    const answerIds =
+    mode === "evolvesTo"
+    ? relation.toIds
+    : relation.fromId
+        ? [relation.fromId]
+        : [];
+
+    if(answerIds.length === 0){
+        return null;
+    }
+
+    const answerSpecies =
+    await Promise.all(
+        answerIds.map(id => fetchPokemonSpecies(id))
+    );
+
+    return {
+        pokemonId,
+        pokemonName,
+        questionText:
+        mode === "evolvesTo"
+        ? "このポケモンは進化したら何になる？"
+        : "このポケモンの進化元はだれ？",
+        acceptedAnswers:
+        answerSpecies.map(getJapanesePokemonName),
+        answerPokemonIds:answerIds
+    };
 }
 
 function getJapaneseDescription(species){
@@ -434,38 +586,89 @@ async function loadPokemon(){
         return;
     }
 
-    const availablePokemonIds =
+    let availablePokemonIds =
     quizPokemonIds.filter(
         id => !usedPokemonIds.includes(id)
     );
 
-    if(availablePokemonIds.length === 0){
+    let questionData = null;
+
+    try{
+        while(
+            availablePokemonIds.length > 0 &&
+            !questionData
+        ){
+            const randomIndex =
+            Math.floor(
+                Math.random()*availablePokemonIds.length
+            );
+
+            const pokemonId =
+            availablePokemonIds[randomIndex];
+
+            usedPokemonIds.push(pokemonId);
+            availablePokemonIds.splice(randomIndex,1);
+
+            questionData =
+            await createQuestionData(pokemonId);
+
+            if(requestId !== loadRequestId){
+                return;
+            }
+        }
+    }catch(error){
+        if(requestId !== loadRequestId){
+            return;
+        }
+
+        document.getElementById("timer").textContent =
+        "⏰ 読み込みに失敗しました";
+
+        document.getElementById("result").textContent =
+        "通信状態を確認して、もう一度お試しください";
+
+        setQuizActionButton("もう一度試す", "next");
+        return;
+    }
+
+    if(!questionData){
+        if(answeredQuestions === 0){
+            quizPokemonIds = [];
+            usedPokemonIds = [];
+
+            document.getElementById("timer").textContent =
+            "⏰ 出題できる進化問題がありません";
+
+            document.getElementById("result").textContent =
+            "世代・タイプ・クイズモードを変更してください";
+
+            setQuizActionButton("スタート", "start");
+            return;
+        }
+
         showQuizResult();
         return;
     }
 
-    const pokemonId =
-    availablePokemonIds[
-        Math.floor(
-            Math.random()*availablePokemonIds.length
-        )
-    ];
+    currentPokemonId = questionData.pokemonId;
+    currentPokemon = questionData.acceptedAnswers[0];
+    currentAcceptedAnswers = questionData.acceptedAnswers;
+    currentAnswerPokemonIds = questionData.answerPokemonIds;
 
-    currentPokemonId = pokemonId;
-    usedPokemonIds.push(pokemonId);
+    document.getElementById(
+        "questionText"
+    ).textContent =
+    questionData.questionText;
 
-    const species =
-    await fetchPokemonSpecies(pokemonId);
-
-    if(requestId !== loadRequestId){
-        return;
-    }
-
-    currentPokemon =
-    getJapanesePokemonName(species);
+    document.getElementById(
+        "questionPokemonName"
+    ).textContent =
+    getSelectedQuizMode() === "name"
+    ? ""
+    : questionData.pokemonName;
 
     const image =
-    getPokemonImageUrl(pokemonId);
+    getPokemonImageUrl(questionData.pokemonId);
 
     const img =
     document.getElementById("pokemonImage");
@@ -531,12 +734,21 @@ function resetQuestion(message){
     usedPokemonIds = [];
     currentPokemon = "";
     currentPokemonId = 0;
+    currentAcceptedAnswers = [];
+    currentAnswerPokemonIds = [];
 
     document.getElementById("comboToast").style.display = "none";
     document.getElementById("answer").value = "";
     document.getElementById("result").textContent = "";
     document.getElementById("timer").textContent = message;
     document.getElementById("pokemonImage").removeAttribute("src");
+    document.getElementById("questionText").textContent =
+    getSelectedQuizMode() === "evolvesTo"
+    ? "このポケモンは進化したら何になる？"
+    : getSelectedQuizMode() === "evolvesFrom"
+        ? "このポケモンの進化元はだれ？"
+        : "このポケモンはだれ？";
+    document.getElementById("questionPokemonName").textContent = "";
 
     updateQuestionProgress();
     setQuizActionButton("スタート", "start");
@@ -758,11 +970,17 @@ function checkAnswer(){
     .value
     .trim();
 
-    if(
-    normalizePokemonName(answer)
-    ===
-    normalizePokemonName(currentPokemon)
-){
+    const normalizedAnswer =
+    normalizePokemonName(answer);
+
+    const matchedAnswerIndex =
+    currentAcceptedAnswers.findIndex(
+        pokemonName =>
+        normalizePokemonName(pokemonName)
+        === normalizedAnswer
+    );
+
+    if(matchedAnswerIndex !== -1){
         
         clearInterval(timer);
         isQuestionActive = false;
@@ -770,15 +988,16 @@ function checkAnswer(){
         document.getElementById("result")
         .textContent="⭕ 正解！";
 
-        if(
-        !foundPokemon.includes(
-        currentPokemonId
-        )){
+        const foundPokemonId =
+        currentAnswerPokemonIds[matchedAnswerIndex]
+        || currentPokemonId;
+
+        if(!foundPokemon.includes(foundPokemonId)){
             foundPokemon.push(
-            currentPokemonId
+            foundPokemonId
             );
 
-            foundPokemonMeta[currentPokemonId] = {
+            foundPokemonMeta[foundPokemonId] = {
                 firstFoundAt:getTodayText()
             };
 
@@ -808,7 +1027,7 @@ function checkAnswer(){
 
         document.getElementById("result")
         .textContent =
-        `❌ 不正解！ 正解は ${currentPokemon}`;
+        `❌ 不正解！ 正解は ${currentAcceptedAnswers.join(" / ")}`;
 
         finishQuestion();
     }
@@ -864,7 +1083,7 @@ function startTimer(){
             document.getElementById(
                 "result"
             ).textContent =
-            `⏰ 時間切れ！ 正解は ${currentPokemon}`;
+            `⏰ 時間切れ！ 正解は ${currentAcceptedAnswers.join(" / ")}`;
 
             finishQuestion();
         }
@@ -888,6 +1107,15 @@ document
         img.classList.remove("silhouette");
     }
 }
+);
+
+document
+.getElementById(
+"quizModeFilter"
+)
+.addEventListener(
+"change",
+() => resetQuestion("⏰ スタートを押してください")
 );
 
 document

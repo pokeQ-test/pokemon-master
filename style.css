@@ -248,6 +248,22 @@ button:disabled{
     margin-bottom:8px;
 }
 
+.question-text{
+    min-height:30px;
+    margin:6px 0 4px;
+    color:#333;
+    font-size:21px;
+    font-weight:bold;
+}
+
+.question-pokemon-name{
+    min-height:28px;
+    margin-top:-8px;
+    color:#ef5350;
+    font-size:20px;
+    font-weight:bold;
+}
+
 #achievementContainer{
     background:white;
     margin-top:20px;

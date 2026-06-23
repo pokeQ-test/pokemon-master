@@ -35,6 +35,15 @@
 
 <div class="filters">
     <label>
+        クイズモード
+        <select id="quizModeFilter">
+            <option value="name">このポケモンはだれ？</option>
+            <option value="evolvesTo">進化したら何になる？</option>
+            <option value="evolvesFrom">進化元はだれ？</option>
+        </select>
+    </label>
+
+    <label>
         世代
         <select id="generationFilter">
             <option value="all">すべて</option>
@@ -79,7 +88,7 @@
         問題数
         <select id="questionCountFilter">
             <option value="all">すべて</option>
-            <option value="10">10問</option>
+            <option value="10" selected>10問</option>
             <option value="20">20問</option>
             <option value="30">30問</option>
         </select>
@@ -96,7 +105,13 @@
 ⏰ スタートを押してください
 </div>
 
+<div id="questionText" class="question-text">
+このポケモンはだれ？
+</div>
+
 <img id="pokemonImage">
+
+<div id="questionPokemonName" class="question-pokemon-name"></div>
 
 <input
 type="text"
