@@ -280,6 +280,10 @@ button:disabled{
     line-height:1.5;
 }
 
+.stat-quiz-note a{
+    color:#c2410c;
+}
+
 #achievementContainer{
     background:white;
     margin-top:20px;

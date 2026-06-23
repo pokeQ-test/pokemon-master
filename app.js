@@ -47,20 +47,34 @@ const pokemonDataCache = {};
 const evolutionChainCache = {};
 const evolutionRelationCache = {};
 
-// 2026年6月時点の対戦環境を想定した初期リスト。
-// 公式の公開Web APIが確認できないため、更新時はこの配列だけを差し替える。
+// GameWith「ポケモンチャンピオンズ 使用率ランキング」
+// シングル・シーズンM-3（集計日 2026-06-22）の上位100体。
+// フォルムで種族値が異なるポケモンはPokeAPIの識別名を使用する。
 const championsUsageTop100 = [
-    1007,1008,898,888,889,1024,1000,991,987,1002,
-    1003,1004,1017,1020,1021,1022,1023,645,642,641,
-    905,382,383,384,483,484,487,493,643,644,
-    646,716,717,800,791,792,890,150,249,250,
-    485,488,598,812,727,876,591,778,445,149,
-    248,376,373,700,282,475,448,658,784,887,
-    998,959,964,977,978,983,970,980,975,934,
-    911,908,914,815,818,823,869,858,861,879,
-    882,892,894,895,897,896,468,479,472,473,
-    462,461,423,407,350,330,260,257,254,212
+    445,1018,778,908,26,398,376,6,823,260,
+    450,"basculegion-male",730,279,257,130,"ninetales-alola",861,970,149,
+    1000,635,"rotom-wash",983,303,681,911,94,691,655,
+    212,637,584,428,658,121,154,937,"samurott-hisui",887,
+    197,3,903,448,979,547,9,473,"rotom-heat",700,
+    939,"floette-eternal",248,184,530,752,478,36,956,132,
+    "zoroark-hisui",748,282,604,227,475,143,254,350,497,
+    689,1013,115,900,560,952,545,660,302,460,
+    936,727,858,354,80,395,855,"goodra-hisui","slowking-galar",668,
+    609,925,652,534,666,"arcanine-hisui",904,733,968,695
 ];
+
+const championsFormNames = {
+    "basculegion-male":"イダイトウ（オス）",
+    "ninetales-alola":"アローラキュウコン",
+    "rotom-wash":"ウォッシュロトム",
+    "samurott-hisui":"ヒスイダイケンキ",
+    "rotom-heat":"ヒートロトム",
+    "floette-eternal":"フラエッテ（永遠）",
+    "zoroark-hisui":"ヒスイゾロアーク",
+    "goodra-hisui":"ヒスイヌメルゴン",
+    "slowking-galar":"ガラルヤドキング",
+    "arcanine-hisui":"ヒスイウインディ"
+};
 
 // 通常フォルムの種族値を基準にした能力別トップ20出題枠。
 const topStatPokemonIds = {
@@ -402,7 +416,13 @@ function getStatQuizPokemonIds(){
             ...championsUsageTop100,
             ...Object.values(topStatPokemonIds).flat()
         ])
-    ].filter(id => id >= 1 && id <= 1025);
+    ].filter(pokemonId =>
+        typeof pokemonId === "string" ||
+        (
+            pokemonId >= 1 &&
+            pokemonId <= 1025
+        )
+    );
 }
 
 function getStatQuizEligibleStats(pokemonId,pokemonData){
@@ -463,11 +483,14 @@ function getStatQuizEligibleStats(pokemonId,pokemonData){
 
 async function createBaseStatQuestionData(pokemonId){
 
-    const [species,pokemonData] =
-    await Promise.all([
-        fetchPokemonSpecies(pokemonId),
-        fetchPokemonData(pokemonId)
-    ]);
+    const pokemonData =
+    await fetchPokemonData(pokemonId);
+
+    const speciesId =
+    getPokemonIdFromUrl(pokemonData.species.url);
+
+    const species =
+    await fetchPokemonSpecies(speciesId);
 
     const eligibleStats =
     getStatQuizEligibleStats(pokemonId,pokemonData);
@@ -481,11 +504,17 @@ async function createBaseStatQuestionData(pokemonId){
 
     return {
         pokemonId,
-        pokemonName:getJapanesePokemonName(species),
+        pokemonName:
+        championsFormNames[pokemonId] ||
+        getJapanesePokemonName(species),
         questionText:
         `このポケモンの「${statLabels[statName]}」の種族値は？`,
         statName,
         statValue:stats[statName],
+        imageUrl:
+        pokemonData.sprites.other[
+            "official-artwork"
+        ].front_default,
         acceptedAnswers:[],
         answerPokemonIds:[pokemonId]
     };
@@ -855,6 +884,7 @@ async function loadPokemon(){
     }
 
     const image =
+    questionData.imageUrl ||
     getPokemonImageUrl(questionData.pokemonId);
 
     const img =
