@@ -15,6 +15,9 @@ let quizAction = "start";
 let currentDexDetailId = 1;
 let currentCombo = 0;
 let comboToastTimer;
+let currentStatName = "";
+let currentStatValue = 0;
+let statQuizPoints = 0;
 
 const foundPokemon =
 JSON.parse(
@@ -40,8 +43,52 @@ const generationRanges = {
 
 const typePokemonCache = {};
 const speciesCache = {};
+const pokemonDataCache = {};
 const evolutionChainCache = {};
 const evolutionRelationCache = {};
+
+// 2026年6月時点の対戦環境を想定した初期リスト。
+// 公式の公開Web APIが確認できないため、更新時はこの配列だけを差し替える。
+const championsUsageTop100 = [
+    1007,1008,898,888,889,1024,1000,991,987,1002,
+    1003,1004,1017,1020,1021,1022,1023,645,642,641,
+    905,382,383,384,483,484,487,493,643,644,
+    646,716,717,800,791,792,890,150,249,250,
+    485,488,598,812,727,876,591,778,445,149,
+    248,376,373,700,282,475,448,658,784,887,
+    998,959,964,977,978,983,970,980,975,934,
+    911,908,914,815,818,823,869,858,861,879,
+    882,892,894,895,897,896,468,479,472,473,
+    462,461,423,407,350,330,260,257,254,212
+];
+
+// 通常フォルムの種族値を基準にした能力別トップ20出題枠。
+const topStatPokemonIds = {
+    hp:[
+        242,113,799,895,202,975,321,594,143,1003,
+        992,289,487,426,977,297,890,40,792,791
+    ],
+    attack:[
+        798,409,486,289,383,386,644,384,612,998,
+        896,809,567,901,534,992,464,555,794,1005
+    ],
+    defense:[
+        213,805,377,208,713,306,91,411,95,1025,
+        748,680,719,379,703,867,968,563,476,809
+    ],
+    "special-attack":[
+        796,150,806,382,384,386,643,484,720,483,
+        897,738,609,864,890,994,792,795,1021,858
+    ],
+    "special-defense":[
+        213,378,250,671,249,379,706,476,719,703,
+        748,226,681,382,411,242,987,615,477,1001
+    ],
+    speed:[
+        894,291,795,386,101,617,807,887,889,888,
+        847,991,987,1007,1008,1002,169,897,135,142
+    ]
+};
 
 const comboRewards = {
     3:{
@@ -146,12 +193,23 @@ async function fetchPokemonSpecies(pokemonId){
 
 async function fetchPokemonData(pokemonId){
 
+    if(pokemonDataCache[pokemonId]){
+        return pokemonDataCache[pokemonId];
+    }
+
     const response =
     await fetch(
         `https://pokeapi.co/api/v2/pokemon/${pokemonId}`
     );
 
-    return response.json();
+    if(!response.ok){
+        throw new Error("種族値を取得できませんでした");
+    }
+
+    const pokemonData = await response.json();
+    pokemonDataCache[pokemonId] = pokemonData;
+
+    return pokemonData;
 }
 
 function getJapanesePokemonName(species){
@@ -251,6 +309,10 @@ function getSelectedQuizMode(){
 
 async function createQuestionData(pokemonId){
 
+    if(getSelectedQuizMode() === "baseStat"){
+        return createBaseStatQuestionData(pokemonId);
+    }
+
     const species =
     await fetchPokemonSpecies(pokemonId);
 
@@ -322,6 +384,86 @@ const statLabels = {
     "special-defense":"特防",
     speed:"素早さ"
 };
+
+function getPokemonBaseStats(pokemonData){
+
+    return Object.fromEntries(
+        pokemonData.stats.map(item => [
+            item.stat.name,
+            item.base_stat
+        ])
+    );
+}
+
+function getStatQuizPokemonIds(){
+
+    return [
+        ...new Set([
+            ...championsUsageTop100,
+            ...Object.values(topStatPokemonIds).flat()
+        ])
+    ].filter(id => id >= 1 && id <= 1025);
+}
+
+function getStatQuizEligibleStats(pokemonId,pokemonData){
+
+    const stats = getPokemonBaseStats(pokemonData);
+    const eligibleStats = [];
+
+    if(championsUsageTop100.includes(pokemonId)){
+        const offensePeak =
+        Math.max(stats.attack,stats["special-attack"]);
+        const defenseAverage =
+        (stats.hp + stats.defense + stats["special-defense"]) / 3;
+
+        eligibleStats.push(
+            ...(
+                offensePeak >= defenseAverage
+                ? ["attack","special-attack","speed"]
+                : ["hp","defense","special-defense","speed"]
+            )
+        );
+    }
+
+    Object.entries(topStatPokemonIds)
+    .forEach(([statName,pokemonIds]) => {
+        if(pokemonIds.includes(pokemonId)){
+            eligibleStats.push(statName);
+        }
+    });
+
+    return [...new Set(eligibleStats)];
+}
+
+async function createBaseStatQuestionData(pokemonId){
+
+    const [species,pokemonData] =
+    await Promise.all([
+        fetchPokemonSpecies(pokemonId),
+        fetchPokemonData(pokemonId)
+    ]);
+
+    const eligibleStats =
+    getStatQuizEligibleStats(pokemonId,pokemonData);
+
+    const statName =
+    eligibleStats[
+        Math.floor(Math.random()*eligibleStats.length)
+    ];
+
+    const stats = getPokemonBaseStats(pokemonData);
+
+    return {
+        pokemonId,
+        pokemonName:getJapanesePokemonName(species),
+        questionText:
+        `このポケモンの「${statLabels[statName]}」の種族値は？`,
+        statName,
+        statValue:stats[statName],
+        acceptedAnswers:[],
+        answerPokemonIds:[pokemonId]
+    };
+}
 
 function calculateLevel50Stat(statName,baseStat){
 
@@ -473,6 +615,10 @@ async function getTypePokemonIds(type){
 }
 
 async function getFilteredPokemonIds(){
+
+    if(getSelectedQuizMode() === "baseStat"){
+        return getStatQuizPokemonIds();
+    }
 
     const generationIds =
     getSelectedGenerationIds();
@@ -651,9 +797,13 @@ async function loadPokemon(){
     }
 
     currentPokemonId = questionData.pokemonId;
-    currentPokemon = questionData.acceptedAnswers[0];
+    currentPokemon =
+    questionData.acceptedAnswers[0]
+    || questionData.pokemonName;
     currentAcceptedAnswers = questionData.acceptedAnswers;
     currentAnswerPokemonIds = questionData.answerPokemonIds;
+    currentStatName = questionData.statName || "";
+    currentStatValue = questionData.statValue || 0;
 
     document.getElementById(
         "questionText"
@@ -666,6 +816,17 @@ async function loadPokemon(){
     getSelectedQuizMode() === "name"
     ? ""
     : questionData.pokemonName;
+
+    const answerInput =
+    document.getElementById("answer");
+
+    if(getSelectedQuizMode() === "baseStat"){
+        answerInput.placeholder = "種族値を数字で入力";
+        answerInput.inputMode = "numeric";
+    }else{
+        answerInput.placeholder = "ポケモン名を入力";
+        answerInput.removeAttribute("inputmode");
+    }
 
     const image =
     getPokemonImageUrl(questionData.pokemonId);
@@ -736,6 +897,9 @@ function resetQuestion(message){
     currentPokemonId = 0;
     currentAcceptedAnswers = [];
     currentAnswerPokemonIds = [];
+    currentStatName = "";
+    currentStatValue = 0;
+    statQuizPoints = 0;
 
     document.getElementById("comboToast").style.display = "none";
     document.getElementById("answer").value = "";
@@ -743,12 +907,15 @@ function resetQuestion(message){
     document.getElementById("timer").textContent = message;
     document.getElementById("pokemonImage").removeAttribute("src");
     document.getElementById("questionText").textContent =
-    getSelectedQuizMode() === "evolvesTo"
+    getSelectedQuizMode() === "baseStat"
+    ? "ポケモンの種族値を当てよう！"
+    : getSelectedQuizMode() === "evolvesTo"
     ? "このポケモンは進化したら何になる？"
     : getSelectedQuizMode() === "evolvesFrom"
         ? "このポケモンの進化元はだれ？"
         : "このポケモンはだれ？";
     document.getElementById("questionPokemonName").textContent = "";
+    updateQuizModeUI();
 
     updateQuestionProgress();
     setQuizActionButton("スタート", "start");
@@ -900,12 +1067,22 @@ function showQuizResult(){
     isQuestionActive = false;
     quizFinished = true;
 
+    const isBaseStatQuiz =
+    getSelectedQuizMode() === "baseStat";
+
+    const maximumStatPoints =
+    answeredQuestions * 20;
+
     const accuracy =
     answeredQuestions === 0
     ? 0
-    : Math.round(
-        correctAnswers / answeredQuestions * 100
-    );
+    : isBaseStatQuiz
+        ? Math.round(
+            statQuizPoints / maximumStatPoints * 100
+        )
+        : Math.round(
+            correctAnswers / answeredQuestions * 100
+        );
 
     const resultInfo =
     getResultInfo(accuracy);
@@ -928,10 +1105,15 @@ function showQuizResult(){
 
     document.getElementById("resultScore")
     .textContent =
-    `正答率 ${accuracy}%（${correctAnswers} / ${answeredQuestions}）`;
+    isBaseStatQuiz
+    ? `${accuracy}点 / 100点`
+    : `正答率 ${accuracy}%（${correctAnswers} / ${answeredQuestions}）`;
 
     document.getElementById("resultMessage")
-    .textContent = resultInfo.message;
+    .textContent =
+    isBaseStatQuiz
+    ? `合計 ${statQuizPoints} / ${maximumStatPoints}点を100点満点に換算しました。`
+    : resultInfo.message;
 
     hideAllPages();
 
@@ -956,6 +1138,48 @@ function backToQuizFromResult(){
     resetQuestion("⏰ スタートを押してください");
 }
 
+function calculateBaseStatQuestionPoints(answerValue,correctValue){
+
+    const difference =
+    Math.abs(answerValue-correctValue);
+
+    return Math.max(
+        0,
+        20-Math.floor(difference/5)
+    );
+}
+
+function checkBaseStatAnswer(answer){
+
+    if(
+        answer === "" ||
+        !/^\d+$/.test(answer)
+    ){
+        document.getElementById("result").textContent =
+        "0以上の整数で入力してください";
+        return;
+    }
+
+    clearInterval(timer);
+    isQuestionActive = false;
+
+    const answerValue = Number(answer);
+    const difference =
+    Math.abs(answerValue-currentStatValue);
+    const questionPoints =
+    calculateBaseStatQuestionPoints(
+        answerValue,
+        currentStatValue
+    );
+
+    statQuizPoints += questionPoints;
+
+    document.getElementById("result").textContent =
+    `正解は ${currentStatValue}（誤差 ${difference}）／ ${questionPoints}点`;
+
+    finishQuestion();
+}
+
 function checkAnswer(){
 
     if(!isQuestionActive){
@@ -969,6 +1193,11 @@ function checkAnswer(){
     .getElementById("answer")
     .value
     .trim();
+
+    if(getSelectedQuizMode() === "baseStat"){
+        checkBaseStatAnswer(answer);
+        return;
+    }
 
     const normalizedAnswer =
     normalizePokemonName(answer);
@@ -1083,7 +1312,9 @@ function startTimer(){
             document.getElementById(
                 "result"
             ).textContent =
-            `⏰ 時間切れ！ 正解は ${currentAcceptedAnswers.join(" / ")}`;
+            getSelectedQuizMode() === "baseStat"
+            ? `⏰ 時間切れ！ 正解は ${currentStatValue}（0点）`
+            : `⏰ 時間切れ！ 正解は ${currentAcceptedAnswers.join(" / ")}`;
 
             finishQuestion();
         }
@@ -1109,13 +1340,66 @@ document
 }
 );
 
+function updateQuizModeUI(){
+
+    const isBaseStatQuiz =
+    getSelectedQuizMode() === "baseStat";
+
+    document.getElementById(
+        "generationFilter"
+    ).disabled = isBaseStatQuiz;
+
+    document.getElementById(
+        "typeFilter"
+    ).disabled = isBaseStatQuiz;
+
+    const questionCountFilter =
+    document.getElementById("questionCountFilter");
+
+    if(isBaseStatQuiz){
+        questionCountFilter.value = "10";
+    }
+
+    questionCountFilter.disabled = isBaseStatQuiz;
+
+    const silhouetteMode =
+    document.getElementById("silhouetteMode");
+
+    silhouetteMode.disabled = isBaseStatQuiz;
+
+    if(isBaseStatQuiz){
+        silhouetteMode.checked = false;
+        document.getElementById(
+            "pokemonImage"
+        ).classList.remove("silhouette");
+    }
+
+    document.getElementById(
+        "statQuizNote"
+    ).style.display =
+    isBaseStatQuiz
+    ? "block"
+    : "none";
+
+    const answerInput =
+    document.getElementById("answer");
+
+    answerInput.placeholder =
+    isBaseStatQuiz
+    ? "種族値を数字で入力"
+    : "ポケモン名を入力";
+}
+
 document
 .getElementById(
 "quizModeFilter"
 )
 .addEventListener(
 "change",
-() => resetQuestion("⏰ スタートを押してください")
+() => {
+    updateQuizModeUI();
+    resetQuestion("⏰ スタートを押してください");
+}
 );
 
 document

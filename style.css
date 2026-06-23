@@ -74,6 +74,11 @@ select{
     font-size:16px;
 }
 
+select:disabled{
+    color:#888;
+    background:#eee;
+}
+
 .filters{
     background:white;
     margin-top:15px;
@@ -262,6 +267,17 @@ button:disabled{
     color:#ef5350;
     font-size:20px;
     font-weight:bold;
+}
+
+.stat-quiz-note{
+    margin:10px 0 2px;
+    padding:10px;
+    border-radius:10px;
+    background:#fff3e0;
+    color:#7a4b00;
+    font-size:13px;
+    font-weight:bold;
+    line-height:1.5;
 }
 
 #achievementContainer{

@@ -40,6 +40,7 @@
             <option value="name">このポケモンはだれ？</option>
             <option value="evolvesTo">進化したら何になる？</option>
             <option value="evolvesFrom">進化元はだれ？</option>
+            <option value="baseStat">種族値クイズ</option>
         </select>
     </label>
 
@@ -112,6 +113,11 @@
 <img id="pokemonImage">
 
 <div id="questionPokemonName" class="question-pokemon-name"></div>
+
+<div id="statQuizNote" class="stat-quiz-note" style="display:none;">
+使用率上位100体＋能力別種族値トップ20から出題<br>
+全10問・誤差5ごとに1点減点（1問20点）
+</div>
 
 <input
 type="text"
