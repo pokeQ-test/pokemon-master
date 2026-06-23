@@ -18,6 +18,8 @@ let comboToastTimer;
 let currentStatName = "";
 let currentStatValue = 0;
 let statQuizPoints = 0;
+let currentQuestionDescription = "";
+let currentAnswerDescriptions = [];
 
 const foundPokemon =
 JSON.parse(
@@ -350,6 +352,77 @@ function getQuizModeAdvice(){
     return "色や形、からだの特徴をよく見ると、名前を思い出せるかもしれないよ！";
 }
 
+function concealPokemonNames(text){
+
+    const names = [
+        currentPokemon,
+        ...currentAcceptedAnswers
+    ]
+    .filter(Boolean)
+    .sort((a,b) => b.length-a.length);
+
+    return names.reduce(
+        (result,name) =>
+        result.replaceAll(name,"このポケモン"),
+        text
+    );
+}
+
+function createProfessorHint(description){
+
+    if(
+        !description ||
+        description === "説明文が見つかりませんでした。"
+    ){
+        return "まだ図鑑メモが見つからないみたい。姿やタイプから考えてみよう！";
+    }
+
+    const hiddenDescription =
+    concealPokemonNames(description);
+
+    const firstSentence =
+    hiddenDescription
+    .split(/[。！？]/)[0]
+    .slice(0,70);
+
+    return `図鑑メモには「${firstSentence}」とあるよ。ここから想像してみよう！`;
+}
+
+function createProfessorCorrectLine(description){
+
+    if(
+        !description ||
+        description === "説明文が見つかりませんでした。"
+    ){
+        return "大正解！ またひとつ、ポケモン博士に近づいたね！";
+    }
+
+    const lines = [
+        `大正解！ 図鑑によると「${description}」なんだって。おもしろいね！`,
+        `さすが！ はなのあ博士のメモには「${description}」と書いてあるよ！`,
+        `ぴんぽーん！ このポケモンは「${description}」という特徴があるんだよ。`
+    ];
+
+    return lines[
+        (answeredQuestions+currentPokemonId.toString().length)
+        % lines.length
+    ];
+}
+
+function showProfessorHint(){
+
+    if(!currentQuestionDescription){
+        updateProfessorAdvice(
+            "クイズをスタートすると、図鑑メモからヒントを出すよ！"
+        );
+        return;
+    }
+
+    updateProfessorAdvice(
+        createProfessorHint(currentQuestionDescription)
+    );
+}
+
 async function createQuestionData(pokemonId){
 
     if(getSelectedQuizMode() === "baseStat"){
@@ -370,8 +443,12 @@ async function createQuestionData(pokemonId){
             pokemonId,
             pokemonName,
             questionText:"このポケモンはだれ？",
+            description:getJapaneseDescription(species),
             acceptedAnswers:[pokemonName],
-            answerPokemonIds:[pokemonId]
+            answerPokemonIds:[pokemonId],
+            answerDescriptions:[
+                getJapaneseDescription(species)
+            ]
         };
     }
 
@@ -401,9 +478,12 @@ async function createQuestionData(pokemonId){
         mode === "evolvesTo"
         ? "このポケモンは進化したら何になる？"
         : "このポケモンの進化元はだれ？",
+        description:getJapaneseDescription(species),
         acceptedAnswers:
         answerSpecies.map(getJapanesePokemonName),
-        answerPokemonIds:answerIds
+        answerPokemonIds:answerIds,
+        answerDescriptions:
+        answerSpecies.map(getJapaneseDescription)
     };
 }
 
@@ -540,12 +620,16 @@ async function createBaseStatQuestionData(pokemonId){
         `このポケモンの「${statLabels[statName]}」の種族値は？`,
         statName,
         statValue:stats[statName],
+        description:getJapaneseDescription(species),
         imageUrl:
         pokemonData.sprites.other[
             "official-artwork"
         ].front_default,
         acceptedAnswers:[],
-        answerPokemonIds:[pokemonId]
+        answerPokemonIds:[pokemonId],
+        answerDescriptions:[
+            getJapaneseDescription(species)
+        ]
     };
 }
 
@@ -888,6 +972,10 @@ async function loadPokemon(){
     currentAnswerPokemonIds = questionData.answerPokemonIds;
     currentStatName = questionData.statName || "";
     currentStatValue = questionData.statValue || 0;
+    currentQuestionDescription =
+    questionData.description || "";
+    currentAnswerDescriptions =
+    questionData.answerDescriptions || [];
 
     document.getElementById(
         "questionText"
@@ -996,6 +1084,8 @@ function resetQuestion(message){
     currentStatName = "";
     currentStatValue = 0;
     statQuizPoints = 0;
+    currentQuestionDescription = "";
+    currentAnswerDescriptions = [];
 
     document.getElementById("comboToast").style.display = "none";
     document.getElementById("answer").value = "";
@@ -1281,7 +1371,9 @@ function checkBaseStatAnswer(answer){
 
     updateProfessorAdvice(
         questionPoints === 20
-        ? "すごい、ばっちり！ この調子で次の問題にも挑戦しよう！"
+        ? createProfessorCorrectLine(
+            currentQuestionDescription
+        )
         : questionPoints >= 15
             ? "かなり近いよ！ 正解の数字も一緒に覚えておこう。"
             : "だいじょうぶ！ 正解を見て、次に少しずつ近づけていこう。"
@@ -1328,7 +1420,11 @@ function checkAnswer(){
         .textContent="⭕ 正解！";
 
         updateProfessorAdvice(
-            "大正解！ よく思い出せたね。その調子、その調子！"
+            createProfessorCorrectLine(
+                currentAnswerDescriptions[
+                    matchedAnswerIndex
+                ] || currentQuestionDescription
+            )
         );
 
         const foundPokemonId =

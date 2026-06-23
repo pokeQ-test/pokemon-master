@@ -102,12 +102,21 @@
 </div>
 
 <aside class="professor-advice" aria-live="polite">
-    <img
-    class="professor-image"
-    src="assets/professor.png"
-    alt="クイズを応援するオリジナルの博士">
+    <div class="professor-portrait">
+        <img
+        class="professor-image"
+        src="assets/professor.png"
+        alt="クイズを応援するオリジナルの博士">
+        <button
+        type="button"
+        id="professorHintButton"
+        class="professor-hint-button"
+        onclick="showProfessorHint()">
+            💡 ヒント
+        </button>
+    </div>
     <div class="advice-bubble">
-        <div class="advice-name">ミント博士のアドバイス</div>
+        <div class="advice-name">はなのあ博士のアドバイス</div>
         <p id="professorAdvice">
             好きなクイズを選んで、いっしょに挑戦してみよう！
         </p>
