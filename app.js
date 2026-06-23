@@ -416,13 +416,39 @@ function getStatQuizEligibleStats(pokemonId,pokemonData){
         const defenseAverage =
         (stats.hp + stats.defense + stats["special-defense"]) / 3;
 
-        eligibleStats.push(
-            ...(
-                offensePeak >= defenseAverage
-                ? ["attack","special-attack","speed"]
-                : ["hp","defense","special-defense","speed"]
-            )
-        );
+        if(offensePeak >= defenseAverage){
+            if(stats.attack >= stats["special-attack"]){
+                eligibleStats.push("attack");
+            }
+
+            if(stats["special-attack"] >= stats.attack){
+                eligibleStats.push("special-attack");
+            }
+
+            eligibleStats.push("speed");
+        }else{
+            eligibleStats.push("hp");
+
+            const defenseDifference =
+            Math.abs(
+                stats.defense-stats["special-defense"]
+            );
+
+            if(defenseDifference >= 30){
+                eligibleStats.push(
+                    stats.defense > stats["special-defense"]
+                    ? "defense"
+                    : "special-defense"
+                );
+            }else{
+                eligibleStats.push(
+                    "defense",
+                    "special-defense"
+                );
+            }
+
+            eligibleStats.push("speed");
+        }
     }
 
     Object.entries(topStatPokemonIds)
