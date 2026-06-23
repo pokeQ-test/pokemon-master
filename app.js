@@ -864,6 +864,11 @@ function handleQuizAction(){
         return;
     }
 
+    if(quizAction === "result"){
+        showQuizResult();
+        return;
+    }
+
     if(quizFinished || quizAction === "restart"){
         resetQuestion("⏰ スタートを押してください");
     }
@@ -929,7 +934,12 @@ function finishQuestion(){
     if(answeredQuestions >= getSelectedQuestionTotal()){
 
         quizFinished = true;
-        showQuizResult();
+
+        if(getSelectedQuizMode() === "baseStat"){
+            setQuizActionButton("結果を表示", "result");
+        }else{
+            showQuizResult();
+        }
 
         return;
     }
@@ -1145,7 +1155,7 @@ function calculateBaseStatQuestionPoints(answerValue,correctValue){
 
     return Math.max(
         0,
-        20-Math.floor(difference/5)
+        20-Math.floor(difference/3)
     );
 }
 
