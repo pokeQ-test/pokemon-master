@@ -321,6 +321,35 @@ function getSelectedQuizMode(){
     ).value;
 }
 
+function updateProfessorAdvice(message){
+
+    const advice =
+    document.getElementById("professorAdvice");
+
+    if(advice){
+        advice.textContent = message;
+    }
+}
+
+function getQuizModeAdvice(){
+
+    const mode = getSelectedQuizMode();
+
+    if(mode === "evolvesTo"){
+        return "進化したあとの姿を思い出してね。分かれ道がある進化は、どの答えでも大丈夫！";
+    }
+
+    if(mode === "evolvesFrom"){
+        return "進化のつながりを、ひとつ前までゆっくりたどってみよう！";
+    }
+
+    if(mode === "baseStat"){
+        return "種族値はぴったりでなくても点数がもらえるよ。近い数字を考えてみよう！";
+    }
+
+    return "色や形、からだの特徴をよく見ると、名前を思い出せるかもしれないよ！";
+}
+
 async function createQuestionData(pokemonId){
 
     if(getSelectedQuizMode() === "baseStat"){
@@ -872,6 +901,12 @@ async function loadPokemon(){
     ? ""
     : questionData.pokemonName;
 
+    updateProfessorAdvice(
+        getSelectedQuizMode() === "baseStat"
+        ? `${statLabels[currentStatName]}に注目！ まずは100より高いか低いかを考えてみよう。`
+        : getQuizModeAdvice()
+    );
+
     const answerInput =
     document.getElementById("answer");
 
@@ -976,6 +1011,7 @@ function resetQuestion(message){
         ? "このポケモンの進化元はだれ？"
         : "このポケモンはだれ？";
     document.getElementById("questionPokemonName").textContent = "";
+    updateProfessorAdvice(getQuizModeAdvice());
     updateQuizModeUI();
 
     updateQuestionProgress();
@@ -1243,6 +1279,14 @@ function checkBaseStatAnswer(answer){
     document.getElementById("result").textContent =
     `正解は ${currentStatValue}（誤差 ${difference}）／ ${questionPoints}点`;
 
+    updateProfessorAdvice(
+        questionPoints === 20
+        ? "すごい、ばっちり！ この調子で次の問題にも挑戦しよう！"
+        : questionPoints >= 15
+            ? "かなり近いよ！ 正解の数字も一緒に覚えておこう。"
+            : "だいじょうぶ！ 正解を見て、次に少しずつ近づけていこう。"
+    );
+
     finishQuestion();
 }
 
@@ -1282,6 +1326,10 @@ function checkAnswer(){
 
         document.getElementById("result")
         .textContent="⭕ 正解！";
+
+        updateProfessorAdvice(
+            "大正解！ よく思い出せたね。その調子、その調子！"
+        );
 
         const foundPokemonId =
         currentAnswerPokemonIds[matchedAnswerIndex]
@@ -1323,6 +1371,10 @@ function checkAnswer(){
         document.getElementById("result")
         .textContent =
         `❌ 不正解！ 正解は ${currentAcceptedAnswers.join(" / ")}`;
+
+        updateProfessorAdvice(
+            "おしい！ 正解を見て覚えたら、次はきっと答えられるよ。"
+        );
 
         finishQuestion();
     }

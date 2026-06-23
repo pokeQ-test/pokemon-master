@@ -13,7 +13,12 @@
 
 <div class="container" id="mainPage">
 
-<h1>⚡ ポケモン図鑑マスター</h1>
+<header class="app-header">
+    <div class="header-cloud header-cloud-left">☁</div>
+    <div class="header-cloud header-cloud-right">☁</div>
+    <h1>✨ ポケモン図鑑マスター ✨</h1>
+    <p>たのしく学んで めざせクイズマスター！</p>
+</header>
 
 <div class="stats">
 <button onclick="showDex()">
@@ -95,6 +100,19 @@
         </select>
     </label>
 </div>
+
+<aside class="professor-advice" aria-live="polite">
+    <img
+    class="professor-image"
+    src="assets/professor.png"
+    alt="クイズを応援するオリジナルの博士">
+    <div class="advice-bubble">
+        <div class="advice-name">ミント博士のアドバイス</div>
+        <p id="professorAdvice">
+            好きなクイズを選んで、いっしょに挑戦してみよう！
+        </p>
+    </div>
+</aside>
 
 <div class="card">
 

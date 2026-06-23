@@ -438,3 +438,478 @@ button:disabled{
         opacity:1;
     }
 }
+
+/* ふわふわパステルテーマ */
+:root{
+    --pastel-sky:#dff6ff;
+    --pastel-pink:#ffdce8;
+    --pastel-lavender:#e9ddff;
+    --pastel-mint:#dff8e8;
+    --pastel-yellow:#fff2b8;
+    --ink:#4d4964;
+    --ink-soft:#77718e;
+    --accent:#ff79a8;
+    --accent-dark:#e85d91;
+    --blue:#65bfe6;
+    --card:#fffefb;
+    --shadow:0 10px 0 rgba(129,113,173,0.09),
+             0 18px 38px rgba(96,112,160,0.14);
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    min-height:100vh;
+    color:var(--ink);
+    font-family:
+    "Hiragino Maru Gothic ProN",
+    "Yu Gothic",
+    sans-serif;
+    background:
+    radial-gradient(circle at 12% 8%,rgba(255,255,255,.92) 0 34px,transparent 35px),
+    radial-gradient(circle at 86% 18%,rgba(255,255,255,.8) 0 46px,transparent 47px),
+    radial-gradient(circle at 18% 65%,rgba(255,255,255,.55) 0 26px,transparent 27px),
+    linear-gradient(160deg,#dff7ff 0%,#f4e8ff 45%,#fff0f5 100%);
+    background-attachment:fixed;
+}
+
+body::before,
+body::after{
+    position:fixed;
+    z-index:-1;
+    color:rgba(255,255,255,.7);
+    font-size:90px;
+    content:"☁";
+    pointer-events:none;
+}
+
+body::before{
+    top:28%;
+    left:-20px;
+}
+
+body::after{
+    right:-20px;
+    bottom:8%;
+}
+
+.container{
+    max-width:520px;
+    padding:22px 18px 40px;
+}
+
+.app-header{
+    position:relative;
+    overflow:hidden;
+    padding:22px 18px 18px;
+    border:3px solid rgba(255,255,255,.9);
+    border-radius:30px;
+    background:
+    linear-gradient(135deg,#86d9f3,#bba6ee 55%,#ffb7d1);
+    box-shadow:var(--shadow);
+    text-align:center;
+}
+
+.app-header h1,
+h1{
+    margin:0;
+    padding:0;
+    color:white;
+    background:none;
+    font-size:clamp(24px,6vw,31px);
+    letter-spacing:.04em;
+    text-shadow:0 3px 0 rgba(102,85,148,.18);
+}
+
+.app-header p{
+    position:relative;
+    z-index:1;
+    margin:8px 0 0;
+    color:white;
+    font-size:14px;
+    font-weight:bold;
+}
+
+.header-cloud{
+    position:absolute;
+    color:rgba(255,255,255,.38);
+    font-size:64px;
+    line-height:1;
+}
+
+.header-cloud-left{
+    bottom:-18px;
+    left:-6px;
+}
+
+.header-cloud-right{
+    top:-18px;
+    right:-4px;
+}
+
+.stats,
+.filters,
+.card,
+.dex-detail-card,
+.result-card{
+    border:3px solid rgba(255,255,255,.94);
+    background:rgba(255,254,251,.94);
+    box-shadow:var(--shadow);
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    padding:14px;
+    border-radius:24px;
+}
+
+.stats button{
+    margin:0;
+    font-size:14px;
+}
+
+#progress,
+#achievement{
+    padding:10px 8px;
+    border-radius:14px;
+    font-size:13px;
+    font-weight:bold;
+    text-align:center;
+}
+
+#progress{
+    background:var(--pastel-sky);
+}
+
+#achievement{
+    background:var(--pastel-yellow);
+}
+
+.silhouette-option{
+    border:3px solid white;
+    border-radius:20px;
+    color:var(--ink);
+    background:rgba(255,255,255,.82);
+    box-shadow:0 7px 18px rgba(96,112,160,.1);
+    font-weight:bold;
+}
+
+.silhouette-option input{
+    width:20px;
+    height:20px;
+    accent-color:var(--accent);
+}
+
+.filters{
+    padding:16px;
+    border-radius:24px;
+}
+
+.filters::before{
+    display:block;
+    margin-bottom:10px;
+    color:#8175a3;
+    content:"🌈 クイズのせってい";
+    font-size:18px;
+    font-weight:bold;
+    text-align:center;
+}
+
+.filters label{
+    color:#625d78;
+    font-size:14px;
+}
+
+select,
+input[type="text"]{
+    border:2px solid #e4dcf4;
+    border-radius:15px;
+    color:var(--ink);
+    background:#fff;
+    box-shadow:inset 0 2px 0 rgba(104,91,142,.04);
+    font-family:inherit;
+    font-weight:bold;
+    outline:none;
+    transition:.2s ease;
+}
+
+select:focus,
+input[type="text"]:focus{
+    border-color:#89cfeb;
+    box-shadow:0 0 0 4px rgba(137,207,235,.23);
+}
+
+select:disabled{
+    color:#9a96a8;
+    background:#f2eff7;
+}
+
+button{
+    position:relative;
+    border:0;
+    border-radius:16px;
+    color:white;
+    background:linear-gradient(180deg,#ff95bb,#f06c9e);
+    box-shadow:0 5px 0 #cf4f82,0 9px 16px rgba(196,75,123,.2);
+    font-family:inherit;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:transform .12s ease,box-shadow .12s ease;
+}
+
+button:hover:not(:disabled){
+    transform:translateY(-2px);
+    box-shadow:0 7px 0 #cf4f82,0 12px 20px rgba(196,75,123,.22);
+}
+
+button:active:not(:disabled){
+    transform:translateY(4px);
+    box-shadow:0 1px 0 #cf4f82;
+}
+
+button:disabled{
+    background:#c9c4d2;
+    box-shadow:0 4px 0 #aaa4b5;
+}
+
+.professor-advice{
+    display:grid;
+    grid-template-columns:112px 1fr;
+    align-items:end;
+    gap:8px;
+    margin-top:18px;
+    padding:10px 12px 10px 4px;
+    border:3px solid white;
+    border-radius:26px;
+    background:
+    linear-gradient(135deg,rgba(223,248,232,.96),rgba(255,254,251,.96));
+    box-shadow:var(--shadow);
+}
+
+.professor-image{
+    align-self:end;
+    width:112px;
+    height:142px;
+    margin:-24px 0 -10px;
+    object-fit:contain;
+    object-position:center bottom;
+    filter:drop-shadow(0 7px 7px rgba(91,89,126,.16));
+}
+
+.advice-bubble{
+    position:relative;
+    align-self:center;
+    padding:12px 13px;
+    border:2px solid #c9ead7;
+    border-radius:18px;
+    background:white;
+}
+
+.advice-bubble::before{
+    position:absolute;
+    top:45%;
+    left:-10px;
+    width:16px;
+    height:16px;
+    border-bottom:2px solid #c9ead7;
+    border-left:2px solid #c9ead7;
+    background:white;
+    content:"";
+    transform:rotate(45deg);
+}
+
+.advice-name{
+    color:#5a9b7c;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.advice-bubble p{
+    margin:5px 0 0;
+    font-size:14px;
+    font-weight:bold;
+    line-height:1.55;
+}
+
+.card{
+    position:relative;
+    margin-top:18px;
+    padding:20px;
+    border-radius:28px;
+}
+
+.card::before{
+    position:absolute;
+    top:-12px;
+    right:20px;
+    padding:4px 12px;
+    border:2px solid white;
+    border-radius:999px;
+    color:#8b77ad;
+    background:var(--pastel-lavender);
+    content:"★ QUIZ ★";
+    font-size:12px;
+    font-weight:bold;
+}
+
+#questionProgress{
+    display:inline-block;
+    padding:7px 15px;
+    border-radius:999px;
+    color:#71638e;
+    background:var(--pastel-lavender);
+}
+
+#timer{
+    margin:12px 0;
+    padding:10px;
+    border-radius:15px;
+    color:#d95e8b;
+    background:#fff1f6;
+    font-size:20px;
+}
+
+.question-text{
+    color:#55506c;
+}
+
+#pokemonImage{
+    width:min(250px,75vw);
+    height:min(250px,75vw);
+    margin:2px auto;
+    border-radius:50%;
+    background:
+    radial-gradient(circle,#fff 0 45%,#f3ebff 46% 60%,transparent 61%);
+    filter:drop-shadow(0 8px 8px rgba(104,95,144,.15));
+}
+
+#pokemonImage.silhouette{
+    filter:brightness(0) drop-shadow(0 8px 8px rgba(104,95,144,.15));
+}
+
+.question-pokemon-name{
+    color:#ed6c9e;
+}
+
+input[type="text"]{
+    width:100%;
+    min-height:50px;
+    padding:12px 15px;
+    text-align:center;
+}
+
+#quizActionButton{
+    min-height:52px;
+    font-size:18px;
+}
+
+#result{
+    min-height:28px;
+    color:#665b82;
+}
+
+.stat-quiz-note{
+    border:2px dashed #f1c76f;
+    border-radius:16px;
+    color:#786435;
+    background:#fff9d9;
+}
+
+.stat-quiz-note a{
+    color:#c46781;
+}
+
+.page > h1{
+    padding:18px;
+    border:3px solid white;
+    border-radius:26px;
+    background:linear-gradient(135deg,#86d9f3,#bba6ee 55%,#ffb7d1);
+    box-shadow:var(--shadow);
+}
+
+#dexList{
+    padding:5px;
+    border-radius:22px;
+}
+
+.dex-item{
+    border:2px solid white;
+    border-radius:15px;
+    color:var(--ink);
+    background:rgba(255,255,255,.9);
+    box-shadow:0 4px 12px rgba(96,112,160,.1);
+}
+
+.dex-item.locked{
+    color:#9791a5;
+    background:#f4f0f8;
+}
+
+.dex-detail-card,
+.result-card{
+    border-radius:28px;
+}
+
+.result-card h1{
+    color:var(--ink);
+    text-shadow:none;
+}
+
+.dex-stats-section h2{
+    background:linear-gradient(90deg,#83cfea,#bba8e8);
+}
+
+.dex-stat-fill{
+    background:linear-gradient(90deg,#7fd3e8,#ae91df);
+}
+
+.result-page{
+    min-height:100vh;
+}
+
+.result-perfect .result-card{
+    border:4px solid #f3d56c;
+}
+
+.combo-card{
+    border:4px solid #ffd886;
+    border-radius:28px;
+    background:#fffdf8;
+}
+
+.combo-title{
+    color:#ed6c9e;
+}
+
+@media (max-width:420px){
+    .container{
+        padding-right:12px;
+        padding-left:12px;
+    }
+
+    .app-header h1{
+        font-size:23px;
+    }
+
+    .professor-advice{
+        grid-template-columns:92px 1fr;
+    }
+
+    .professor-image{
+        width:96px;
+        height:124px;
+    }
+
+    .advice-bubble p{
+        font-size:13px;
+    }
+
+    .card{
+        padding:18px 14px;
+    }
+}
