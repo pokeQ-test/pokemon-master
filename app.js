@@ -20,6 +20,8 @@ let currentStatValue = 0;
 let statQuizPoints = 0;
 let currentQuestionDescription = "";
 let currentAnswerDescriptions = [];
+let currentCardQuestion = null;
+let selectedCardChoiceIndex = null;
 
 const foundPokemon =
 JSON.parse(
@@ -48,6 +50,555 @@ const speciesCache = {};
 const pokemonDataCache = {};
 const evolutionChainCache = {};
 const evolutionRelationCache = {};
+
+const cardEffectQuestions = [
+    {
+        name:"マナフィ",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SVK/046074_P_MANAFUI.jpg",
+        effect:"自分のベンチポケモン全員が、相手のワザのダメージを受けなくなる。",
+        note:"特性「なみのヴェール」でベンチ狙撃を守るカード。"
+    },
+    {
+        name:"イキリンコex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047869_P_IKIRINKOEX.jpg",
+        effect:"最初の自分の番に、自分の手札をすべてトラッシュして山札を6枚引く。",
+        note:"序盤の手札入れ替えに使いやすい特性「イキリテイク」。"
+    },
+    {
+        name:"ミュウex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047861_P_MIXYUUEX.jpg",
+        effect:"最初の自分の番に、自分の手札が3枚になるように山札を引く。",
+        note:"手札を使い切ってから補充しやすい特性「リスタート」。"
+    },
+    {
+        name:"ネオラントV",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SVK/046073_P_NEORANTOV.jpg",
+        effect:"手札からベンチに出したとき、山札からサポートを1枚選んで手札に加える。",
+        note:"特性「ルミナスサイン」で状況に合うサポートを探せる。"
+    },
+    {
+        name:"かがやくゲッコウガ",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SVK/046075_P_KAGAYAKUGEKKOUGA.jpg",
+        effect:"手札からエネルギーを1枚トラッシュすると、山札を2枚引ける。",
+        note:"特性「かくしふだ」でエネルギーを使って山札を引く。"
+    },
+    {
+        name:"ロトムV",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SP6/041955_P_ROTOMUV.jpg",
+        effect:"自分の番を終わらせるかわりに、山札を3枚引く。",
+        note:"特性「そくせきじゅうでん」で序盤の手札を増やせる。"
+    },
+    {
+        name:"キチキギスex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049205_P_KICHIKIGISUEX.jpg",
+        effect:"前の相手の番に自分のポケモンがきぜつしていたなら、山札を3枚引く。",
+        note:"特性「さかてにとる」で返しの番に手札を補充できる。"
+    },
+    {
+        name:"なかよしポフィン",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049364_T_NAKAYOSHIPOFUIN.jpg",
+        effect:"山札からHP70以下のたねポケモンを2枚まで選び、ベンチに出す。",
+        note:"序盤に小型のたねポケモンを並べるためのグッズ。"
+    },
+    {
+        name:"ネストボール",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047878_T_NESUTOBORU.jpg",
+        effect:"山札からたねポケモンを1枚選び、ベンチに出す。",
+        note:"HP制限なしでたねポケモンを場に出せる。"
+    },
+    {
+        name:"ハイパーボール",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049367_T_HAIPABORU.jpg",
+        effect:"手札を2枚トラッシュして、山札からポケモンを1枚手札に加える。",
+        note:"進化ポケモンも含めて好きなポケモンを探せる。"
+    },
+    {
+        name:"すごいつりざお",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047874_T_SUGOITSURIZAO.jpg",
+        effect:"トラッシュのポケモンと基本エネルギーを合計3枚まで山札に戻す。",
+        note:"倒されたポケモンやエネルギーを山札へ戻せる。"
+    },
+    {
+        name:"ふしぎなアメ",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049371_T_FUSHIGINAAME.jpg",
+        effect:"手札の2進化ポケモンを、場のたねポケモンに直接のせて進化させる。",
+        note:"1進化を飛ばして2進化につなげるグッズ。"
+    },
+    {
+        name:"夜のタンカ",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049386_T_YORUNOTANKA.jpg",
+        effect:"トラッシュからポケモンまたは基本エネルギーを1枚選び、手札に加える。",
+        note:"必要なポケモンやエネルギーをすぐ手札に戻せる。"
+    },
+    {
+        name:"森の封印石",
+        kind:"ポケモンのどうぐ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SVK/046097_T_MORINOFUUINSEKI.jpg",
+        effect:"つけているポケモンVが、山札から好きなカードを1枚手札に加えるVSTARパワーを使える。",
+        note:"特性「スターアルケミー」を使えるようにするどうぐ。"
+    },
+    {
+        name:"ペパー",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047897_T_PEPA.jpg",
+        effect:"山札からグッズとポケモンのどうぐを1枚ずつ選び、手札に加える。",
+        note:"必要なグッズとどうぐを同時に探せるサポート。"
+    },
+    {
+        name:"博士の研究",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047896_T_HAKASENOKENKIXYUU.jpg",
+        effect:"自分の手札をすべてトラッシュし、山札を7枚引く。",
+        note:"手札を大きく入れ替える代表的なドローサポート。"
+    },
+    {
+        name:"ボスの指令",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049440_T_BOSUNOSHIREI.jpg",
+        effect:"相手のベンチポケモンを1匹選び、バトルポケモンと入れ替える。",
+        note:"狙いたい相手のポケモンをバトル場に呼べる。"
+    },
+    {
+        name:"カウンターキャッチャー",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047873_T_KAUNTAKIXYATCHIXYA.jpg",
+        effect:"自分のサイドの残りが相手より多いとき、相手のベンチポケモンをバトル場に呼び出す。",
+        note:"劣勢時にサポート権を使わず相手を呼べるグッズ。"
+    },
+    {
+        name:"メガマフォクシーex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M-P/050174_P_MMAFUOKUSHIEX.jpg",
+        effect:"山札の上から9枚を見て、その中のポケモンを好きなだけベンチに出せる。",
+        note:"ワザ「トリックポータル」で一気に場を展開できる。"
+    },
+    {
+        name:"カジリガメ",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV7/045965_P_KAJIRIGAME.jpg",
+        effect:"特性で受けるダメージを抑えながら戦える、耐久寄りの1進化ポケモン。",
+        note:"特性「てっぺきシェル」が特徴のカード。"
+    },
+    {
+        name:"ハピナスex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049278_P_HAPINASUEX.jpg",
+        effect:"自分のポケモンについている基本エネルギーを動かして、耐久と攻撃を支えられる。",
+        note:"エネルギーを動かす役としてデッキを支えるポケモン。"
+    },
+    {
+        name:"メガガルーラex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1S/047847_P_MGARURAEX.jpg",
+        effect:"バトル場にいるなら、自分の番に1回、山札を2枚引ける。",
+        note:"特性「おつかいダッシュ」で手札を増やせる。"
+    },
+    {
+        name:"メガライボルトex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1S/047828_P_MRAIBORUTOEX.jpg",
+        effect:"ワザを使った次の相手の番、たねポケモンからワザのダメージを受けなくなる。",
+        note:"ワザ「フラッシュレイ」でたねポケモン相手に強く出られる。"
+    },
+    {
+        name:"メガアブソルex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1L/047771_P_MABUSORUEX.jpg",
+        effect:"相手のバトルポケモンにダメカンが6個のっていれば、そのポケモンをきぜつさせる。",
+        note:"ワザ「デスピリオド」で条件付きのきぜつを狙える。"
+    },
+    {
+        name:"ドラパルトex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049264_P_DORAPARUTOEX.jpg",
+        effect:"200ダメージを与え、ダメカン6個を相手のベンチポケモンに好きなようにのせる。",
+        note:"ワザ「ファントムダイブ」でバトル場とベンチを同時に攻める。"
+    },
+    {
+        name:"バシャーモex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SVM/046470_P_BASHIXYAMOEX.jpg",
+        effect:"自分の番に1回、トラッシュから基本エネルギーを1枚選び、自分のポケモンにつける。",
+        note:"特性「たぎるとうし」でエネルギーを加速できる。"
+    },
+    {
+        name:"メガフシギバナex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1L/047736_P_MFUSHIGIBANAEX.jpg",
+        effect:"自分の場の基本草エネルギーを、自分の別のポケモンにつけ替えられる。",
+        note:"特性「ソーラートランス」で草エネルギーを動かせる。"
+    },
+    {
+        name:"メガミミロップex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2/048412_P_MMIMIROPPUEX.jpg",
+        effect:"この番にベンチからバトル場に出ていたなら、ワザのダメージが大きく上がる。",
+        note:"ワザ「しっぷうづき」は入れ替えと相性がいい。"
+    },
+    {
+        name:"Nのゾロアークex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049186_P_NNOZOROAKUEX.jpg",
+        effect:"手札を1枚トラッシュするなら、自分の山札を2枚引ける。",
+        note:"特性「とりひき」で手札を整えられる。"
+    },
+    {
+        name:"ユキメノコ",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV8a/046699_P_YUKIMENOKO.jpg",
+        effect:"ポケモンチェックのたび、特性を持つポケモンにダメカンをのせる。",
+        note:"特性「いてつくとばり」で特性持ちに圧力をかける。"
+    },
+    {
+        name:"マシマシラ",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049074_P_MASHIMASHIRA.jpg",
+        effect:"悪エネルギーがついていれば、自分の場のダメカンを相手の場にのせ替えられる。",
+        note:"特性「アドレナブレイン」でダメカンを動かせる。"
+    },
+    {
+        name:"フーディン",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1S/047834_P_FUDEIN.jpg",
+        effect:"自分の番に1回、手札を1枚トラッシュして山札を2枚引ける。",
+        note:"特性「サイコドロー」で手札を整える2進化ポケモン。"
+    },
+    {
+        name:"メガルカリオex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/048614_P_MRUKARIOEX.jpg",
+        effect:"ワザでトラッシュの基本闘エネルギーを3枚まで、ベンチポケモンに好きなようにつける。",
+        note:"ワザ「はどうづき」で闘エネルギーを再利用できる。"
+    },
+    {
+        name:"オリーヴァex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/048787_P_ORIVUAEX.jpg",
+        effect:"相手のポケモンを6回選び、選んだ回数ぶんダメージをばらまく。",
+        note:"ワザ「オイルマシンガン」で相手の場にダメージを分配する。"
+    },
+    {
+        name:"カミツオロチex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/048780_P_KAMITSUOROCHIEX.jpg",
+        effect:"手札の基本草エネルギーを自分のポケモンにつけ、そのポケモンのHPを30回復する。",
+        note:"特性「じゅくせいチャージ」で加速と回復を同時に行う。"
+    },
+    {
+        name:"イワパレス",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/048762_P_IWAPARESU.jpg",
+        effect:"条件を満たすと、相手のポケモンexからワザのダメージを受けにくくなる。",
+        note:"特性でポケモンex相手の耐久を支えるカード。"
+    },
+    {
+        name:"マリィのオーロンゲex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/050003_P_MARIINOORONGEEX.jpg",
+        effect:"手札から進化したとき、山札から基本悪エネルギーを5枚までマリィのポケモンにつけられる。",
+        note:"特性「パンクアップ」でマリィのポケモンを一気に育てる。"
+    },
+    {
+        name:"メガゲッコウガex",
+        kind:"ポケモン",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M4/050106_P_MGEKKOUGAEX.jpg",
+        effect:"バトル場で基本水エネルギーをトラッシュすると、相手のポケモン1匹にダメカンを6個のせる。",
+        note:"特性「ひっさつしゅりけん」で相手の場を狙える。"
+    },
+    {
+        name:"リーリエの決心",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047900_T_RIRIENOKESSHIN.jpg",
+        effect:"手札をすべて山札にもどして切り、山札を6枚引く。サイドが6枚なら8枚引く。",
+        note:"6/24ジムバトル優勝デッキで多く採用されていたドローサポート。"
+    },
+    {
+        name:"ポケパッド",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M3/049703_T_POKEPADDO.jpg",
+        effect:"山札からルールを持たないポケモンを1枚選び、手札に加える。",
+        note:"ルールを持たないポケモンを探せるグッズ。"
+    },
+    {
+        name:"スペシャルレッドカード",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M4/050156_T_SUPESHIXYARUREDDOKADO.jpg",
+        effect:"相手のサイドが3枚以下なら使える。相手は手札を山札の下にもどし、3枚引く。",
+        note:"終盤に相手の手札を減らせる妨害グッズ。"
+    },
+    {
+        name:"ヒカリ",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2/048417_T_HIKARI.jpg",
+        effect:"山札からたね・1進化・2進化ポケモンを1枚ずつ選び、手札に加える。",
+        note:"進化ラインをまとめてそろえやすいサポート。"
+    },
+    {
+        name:"ふうせん",
+        kind:"ポケモンのどうぐ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047889_T_FUUSEN.jpg",
+        effect:"つけているポケモンのにげるためのエネルギーが2個ぶん少なくなる。",
+        note:"バトル場から動きやすくするポケモンのどうぐ。"
+    },
+    {
+        name:"ジャッジマン",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M-P/049608_T_JIXYAJJIMAN.jpg",
+        effect:"おたがいの手札をすべて山札にもどして切り、それぞれ山札を4枚引く。",
+        note:"相手の手札を流しながら自分も引き直すサポート。"
+    },
+    {
+        name:"ポケモンいれかえ",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MA/047882_T_POKEMONIREKAE.jpg",
+        effect:"自分のバトルポケモンをベンチポケモンと入れ替える。",
+        note:"にげるエネルギーを使わずに入れ替えられる基本グッズ。"
+    },
+    {
+        name:"アカマツ",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV7/046036_T_AKAMATSU.jpg",
+        effect:"山札から違うタイプの基本エネルギーを2枚まで選び、1枚を手札、残りをポケモンにつける。",
+        note:"エネルギー確保と加速を同時にできるサポート。"
+    },
+    {
+        name:"スイレンのお世話",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049428_T_SUIRENNOOSEWA.jpg",
+        effect:"トラッシュからルールを持たないポケモンと基本エネルギーを合計3枚まで手札に加える。",
+        note:"ポケモンと基本エネルギーをまとめて回収できる。"
+    },
+    {
+        name:"トウコ",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV11W/047707_T_TOUKO.jpg",
+        effect:"山札から進化ポケモンとエネルギーを1枚ずつ選び、手札に加える。",
+        note:"進化先とエネルギーを同時に探せるサポート。"
+    },
+    {
+        name:"ロケット団の監視塔",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/048711_T_ROKETTODANNOKANSHITOU.jpg",
+        effect:"おたがいの場のポケモン全員の特性が、すべてなくなる。",
+        note:"特性に頼るデッキへ強く刺さるスタジアム。"
+    },
+    {
+        name:"アンフェアスタンプ(ACE SPEC)",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV5a/045640_T_ANFUEASUTANPU.jpg",
+        effect:"前の相手の番に自分のポケモンがきぜつしていたなら使える。自分は5枚、相手は2枚引き直す。",
+        note:"きぜつ後に手札差を作れるACE SPEC。"
+    },
+    {
+        name:"ヒーローマント(ACE SPEC)",
+        kind:"ポケモンのどうぐ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MBD/048300_T_HIROMANTO.jpg",
+        effect:"つけているポケモンの最大HPを100大きくする。",
+        note:"耐久力を大きく上げるACE SPECのどうぐ。"
+    },
+    {
+        name:"ポケギア3.0",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SLD/041334_T_POKEGIA30.jpg",
+        effect:"山札を上から7枚見て、その中からサポートを1枚手札に加える。",
+        note:"必要なサポートに触りやすくするグッズ。"
+    },
+    {
+        name:"ロケット団のラムダ",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/048701_T_ROKETTODANNORAMUDA.jpg",
+        effect:"山札からトレーナーズを1枚選び、手札に加える。",
+        note:"トレーナーズなら種類を問わず探せるロケット団のサポート。"
+    },
+    {
+        name:"ゼロの大空洞",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV7/046041_T_ZERONODAIKUUDOU.jpg",
+        effect:"場にテラスタルのポケモンがいるプレイヤーは、ベンチを8匹まで出せる。",
+        note:"テラスタルデッキのベンチ枠を広げるスタジアム。"
+    },
+    {
+        name:"パワープロテイン",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1L/047791_T_PAWAPUROTEIN.jpg",
+        effect:"この番、自分の闘ポケモンのワザが相手のバトルポケモンに与えるダメージを30大きくする。",
+        note:"闘ポケモンの打点を伸ばすグッズ。"
+    },
+    {
+        name:"ファイトゴング",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1L/047792_T_FUAITOGONGU.jpg",
+        effect:"山札から闘タイプのたねポケモンまたは基本闘エネルギーを1枚手札に加える。",
+        note:"闘デッキの初動を支えるグッズ。"
+    },
+    {
+        name:"ミツルの思いやり",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1S/047856_T_MITSURUNOOMOIYARI.jpg",
+        effect:"自分のメガシンカex1匹のHPをすべて回復し、そのポケモンのエネルギーをすべて手札にもどす。",
+        note:"メガシンカexを大きく回復できるサポート。"
+    },
+    {
+        name:"むしとりセット",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049383_T_MUSHITORISETTO.jpg",
+        effect:"山札の上から7枚を見て、草ポケモンと基本草エネルギーを合計2枚まで手札に加える。",
+        note:"草デッキのポケモンとエネルギーを探せる。"
+    },
+    {
+        name:"エネルギーつけかえ",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049354_T_ENERUGITSUKEKAE.jpg",
+        effect:"自分の場のポケモンについている基本エネルギーを1個、別のポケモンにつけ替える。",
+        note:"場のエネルギーを動かして攻撃準備を整える。"
+    },
+    {
+        name:"グラビティーマウンテン",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/048705_T_GURABITEIMAUNTEN.jpg",
+        effect:"おたがいの場の2進化ポケモン全員の最大HPを30小さくする。",
+        note:"2進化ポケモンの耐久を下げるスタジアム。"
+    },
+    {
+        name:"ジャンボアイス",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2/048413_T_JIXYANBOAISU.jpg",
+        effect:"エネルギーが3個以上ついている自分のバトルポケモンのHPを80回復する。",
+        note:"エネルギーが多いポケモンを回復するグッズ。"
+    },
+    {
+        name:"ムク",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M5/050297_T_MUKU.jpg",
+        effect:"手札からルールを持たないポケモンを2枚までトラッシュし、その枚数×3枚ぶん山札を引く。",
+        note:"ポケモンをトラッシュして手札を増やすサポート。"
+    },
+    {
+        name:"ロケット団のファクトリー",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/048712_T_ROKETTODANNOFUAKUTORI.jpg",
+        effect:"ロケット団のサポートを使っていたプレイヤーは、自分の番に1回、山札を2枚引ける。",
+        note:"ロケット団デッキの追加ドローを支えるスタジアム。"
+    },
+    {
+        name:"活力の森",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M1S/047857_T_KATSURIXYOKUNOMORI.jpg",
+        effect:"おたがいの草ポケモンは、出したばかりの番でも草ポケモンに進化できる。",
+        note:"草ポケモンの進化を早めるスタジアム。"
+    },
+    {
+        name:"夜の鉱山",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2a/048710_T_YORUNOKOUZAN.jpg",
+        effect:"おたがいのテラスタルのポケモンは、ワザに必要なエネルギーが1個ぶん多くなる。",
+        note:"テラスタルの攻撃を重くするスタジアム。"
+    },
+    {
+        name:"クセロシキのたくらみ",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049421_T_KUSEROSHIKINOTAKURAMI.jpg",
+        effect:"相手は手札が3枚になるようにトラッシュする。",
+        note:"相手の手札を直接減らす妨害サポート。"
+    },
+    {
+        name:"クラッシュハンマー",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SI/040840_T_KURASSHIXYUHANMA.jpg",
+        effect:"コインを1回投げ、オモテなら相手の場のポケモンのエネルギーを1個トラッシュする。",
+        note:"運が絡むがエネルギーを削れるグッズ。"
+    },
+    {
+        name:"サーファー",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049424_T_SAFUA.jpg",
+        effect:"自分のバトルポケモンをベンチと入れ替え、その後、手札が5枚になるように山札を引く。",
+        note:"入れ替えと手札補充を同時にできるサポート。"
+    },
+    {
+        name:"シークレットボックス(ACE SPEC)",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV6/045783_T_SHIKURETTOBOKKUSU.jpg",
+        effect:"手札を3枚トラッシュして、グッズ・どうぐ・サポート・スタジアムを1枚ずつ山札から手札に加える。",
+        note:"トレーナーズをまとめて探せるACE SPEC。"
+    },
+    {
+        name:"ダークベル",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M5/050289_T_DAKUBERU.jpg",
+        effect:"おたがいのバトルポケモンをそれぞれこんらんにする。",
+        note:"バトル場のポケモンをこんらんにするグッズ。"
+    },
+    {
+        name:"バトルコロシアム",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M2/048419_T_BATORUKOROSHIAMU.jpg",
+        effect:"おたがいのベンチポケモン全員は、相手のワザや特性の効果でダメカンがのらない。",
+        note:"ベンチへのダメカンばらまきを防ぐスタジアム。"
+    },
+    {
+        name:"ハンディサーキュレーター",
+        kind:"ポケモンのどうぐ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/SV6/045786_T_HANDEISAKIXYURETA.jpg",
+        effect:"つけたバトルポケモンがワザのダメージを受けたとき、相手のエネルギーをベンチにつけ替える。",
+        note:"相手の攻撃後にエネルギーを動かせるどうぐ。"
+    },
+    {
+        name:"プリズムタワー",
+        kind:"スタジアム",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M4/050164_T_PURIZUMUTAWA.jpg",
+        effect:"自分の番に1回、手札を2枚トラッシュするなら山札を1枚引ける。",
+        note:"手札をトラッシュしながら山札を引けるスタジアム。"
+    },
+    {
+        name:"プレシャスキャリー(ACE SPEC)",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049374_T_PURESHIXYASUKIXYARI.jpg",
+        effect:"山札からたねポケモンを好きなだけ選び、ベンチに出す。",
+        note:"一気にたねポケモンを展開できるACE SPEC。"
+    },
+    {
+        name:"ポケモン回収サイクロン(ACE SPEC)",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049380_T_POKEMONKAISHIXYUUSAIKURON.jpg",
+        effect:"自分の場のポケモン1匹と、ついているすべてのカードを手札にもどす。",
+        note:"場のポケモンをまるごと回収できるACE SPEC。"
+    },
+    {
+        name:"メイのはげまし",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/M3/049708_T_MEINOHAGEMASHI.jpg",
+        effect:"自分のサイドが相手より多いとき、トラッシュの基本エネルギーを2枚まで2進化ポケモンにつける。",
+        note:"劣勢時に2進化ポケモンへエネルギー加速できるサポート。"
+    },
+    {
+        name:"ロケット団のレシーバー",
+        kind:"グッズ",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049391_T_ROKETTODANNORESHIBA.jpg",
+        effect:"山札から名前にロケット団とつくサポートを1枚選び、手札に加える。",
+        note:"ロケット団サポートを探せるグッズ。"
+    },
+    {
+        name:"暗号マニアの解読",
+        kind:"サポート",
+        imageUrl:"https://www.pokemon-card.com/assets/images/card_images/large/MC/049414_T_ANGOUMANIANOKAIDOKU.jpg",
+        effect:"山札から好きなカードを2枚選び、好きな順番で山札の上にもどす。",
+        note:"次に引くカードを強く固定できるサポート。"
+    }
+];
 
 // GameWith「ポケモンチャンピオンズ 使用率ランキング」
 // シングル・シーズンM-3（集計日 2026-06-22）の上位100体。
@@ -323,6 +874,11 @@ function getSelectedQuizMode(){
     ).value;
 }
 
+function isCardEffectQuiz(){
+
+    return getSelectedQuizMode() === "cardEffect";
+}
+
 function updateProfessorAdvice(message){
 
     const advice =
@@ -336,6 +892,10 @@ function updateProfessorAdvice(message){
 function getQuizModeAdvice(){
 
     const mode = getSelectedQuizMode();
+
+    if(mode === "cardEffect"){
+        return "カード名を見て、よく使われる効果を思い出してみよう！ まずは何を探すカードか考えるのがコツだよ。";
+    }
 
     if(mode === "evolvesTo"){
         return "進化したあとの姿を思い出してね。分かれ道がある進化は、どの答えでも大丈夫！";
@@ -425,6 +985,10 @@ function showProfessorHint(){
 
 async function createQuestionData(pokemonId){
 
+    if(isCardEffectQuiz()){
+        return createCardEffectQuestionData(pokemonId);
+    }
+
     if(getSelectedQuizMode() === "baseStat"){
         return createBaseStatQuestionData(pokemonId);
     }
@@ -484,6 +1048,147 @@ async function createQuestionData(pokemonId){
         answerPokemonIds:answerIds,
         answerDescriptions:
         answerSpecies.map(getJapaneseDescription)
+    };
+}
+
+function shuffleItems(items){
+
+    return [...items]
+    .sort(() => Math.random()-0.5);
+}
+
+function getCardMechanic(card){
+
+    if(card.kind !== "ポケモン"){
+        return {
+            type:"効果",
+            name:""
+        };
+    }
+
+    const abilityMatch =
+    card.note.match(/特性「([^」]+)」/);
+
+    if(abilityMatch){
+        return {
+            type:"特性",
+            name:abilityMatch[1]
+        };
+    }
+
+    const attackMatch =
+    card.note.match(/ワザ「([^」]+)」/);
+
+    if(attackMatch){
+        return {
+            type:"ワザ",
+            name:attackMatch[1]
+        };
+    }
+
+    if(card.effect.includes("ワザ")){
+        return {
+            type:"ワザ",
+            name:""
+        };
+    }
+
+    if(card.effect.includes("特性")){
+        return {
+            type:"特性",
+            name:""
+        };
+    }
+
+    return {
+        type:"特性",
+        name:""
+    };
+}
+
+function createCardQuestionText(card,mechanic){
+
+    const mechanicName =
+    mechanic.name
+    ? `「${mechanic.name}」`
+    : "";
+
+    if(mechanic.type === "ワザ"){
+        if(/^\d+ダメージ/.test(card.effect)){
+            return `『${card.name}』のワザ${mechanicName}のダメージと効果は何？`;
+        }
+
+        if(card.effect.includes("エネルギー")){
+            return `『${card.name}』のワザ${mechanicName}でエネルギーはどうなる？`;
+        }
+
+        return `『${card.name}』のワザ${mechanicName}の効果は何？`;
+    }
+
+    if(mechanic.type === "特性"){
+        return `『${card.name}』の特性${mechanicName}の効果は何？`;
+    }
+
+    return `『${card.name}』の効果は何？`;
+}
+
+function getCardChoicePool(card,mechanic){
+
+    const sameMechanicChoices =
+    cardEffectQuestions.filter(item => {
+        if(item.name === card.name){
+            return false;
+        }
+
+        const itemMechanic =
+        getCardMechanic(item);
+
+        return itemMechanic.type === mechanic.type;
+    });
+
+    if(sameMechanicChoices.length >= 3){
+        return sameMechanicChoices;
+    }
+
+    return cardEffectQuestions.filter(
+        item => item.name !== card.name
+    );
+}
+
+function createCardEffectQuestionData(cardIndex){
+
+    const card =
+    cardEffectQuestions[cardIndex];
+
+    const mechanic =
+    getCardMechanic(card);
+
+    const wrongChoices =
+    shuffleItems(
+        getCardChoicePool(card,mechanic)
+    )
+    .slice(0,3)
+    .map(item => item.effect);
+
+    const choices =
+    shuffleItems([
+        card.effect,
+        ...wrongChoices
+    ]);
+
+    return {
+        pokemonId:cardIndex,
+        pokemonName:card.name,
+        questionText:createCardQuestionText(card,mechanic),
+        description:card.note,
+        imageUrl:card.imageUrl,
+        acceptedAnswers:[card.effect],
+        answerPokemonIds:[],
+        answerDescriptions:[card.note],
+        card,
+        mechanic,
+        choices,
+        correctChoiceIndex:choices.indexOf(card.effect)
     };
 }
 
@@ -784,6 +1489,10 @@ async function getTypePokemonIds(type){
 
 async function getFilteredPokemonIds(){
 
+    if(isCardEffectQuiz()){
+        return cardEffectQuestions.map((_,index) => index);
+    }
+
     if(getSelectedQuizMode() === "baseStat"){
         return getStatQuizPokemonIds();
     }
@@ -972,6 +1681,10 @@ async function loadPokemon(){
     currentAnswerPokemonIds = questionData.answerPokemonIds;
     currentStatName = questionData.statName || "";
     currentStatValue = questionData.statValue || 0;
+    currentCardQuestion = questionData.card
+    ? questionData
+    : null;
+    selectedCardChoiceIndex = null;
     currentQuestionDescription =
     questionData.description || "";
     currentAnswerDescriptions =
@@ -985,23 +1698,46 @@ async function loadPokemon(){
     document.getElementById(
         "questionPokemonName"
     ).textContent =
-    getSelectedQuizMode() === "name"
+    getSelectedQuizMode() === "name" ||
+    isCardEffectQuiz()
     ? ""
     : questionData.pokemonName;
 
     updateProfessorAdvice(
-        getSelectedQuizMode() === "baseStat"
+        isCardEffectQuiz()
+        ? `出典: アルテマ「ポケカの汎用カード一覧」。${questionData.description}`
+        : getSelectedQuizMode() === "baseStat"
         ? `${statLabels[currentStatName]}に注目！ まずは100より高いか低いかを考えてみよう。`
         : getQuizModeAdvice()
     );
 
     const answerInput =
     document.getElementById("answer");
+    const cardChoiceList =
+    document.getElementById("cardChoiceList");
 
-    if(getSelectedQuizMode() === "baseStat"){
+    if(isCardEffectQuiz()){
+        answerInput.style.display = "none";
+        cardChoiceList.style.display = "grid";
+        cardChoiceList.innerHTML =
+        questionData.choices.map((choice,index) => `
+            <button
+            type="button"
+            class="card-choice-button"
+            onclick="selectCardChoice(${index})">
+                ${choice}
+            </button>
+        `).join("");
+    }else if(getSelectedQuizMode() === "baseStat"){
+        answerInput.style.display = "";
+        cardChoiceList.style.display = "none";
+        cardChoiceList.innerHTML = "";
         answerInput.placeholder = "種族値を数字で入力";
         answerInput.inputMode = "numeric";
     }else{
+        answerInput.style.display = "";
+        cardChoiceList.style.display = "none";
+        cardChoiceList.innerHTML = "";
         answerInput.placeholder = "ポケモン名を入力";
         answerInput.removeAttribute("inputmode");
     }
@@ -1012,10 +1748,55 @@ async function loadPokemon(){
 
     const img =
     document.getElementById("pokemonImage");
+    const imageFrame =
+    document.getElementById("pokemonImageFrame");
 
-    img.src = image;
+    if(isCardEffectQuiz()){
+        imageFrame.classList.add("card-art-frame");
+        imageFrame.classList.toggle(
+            "trainer-art-frame",
+            questionData.card.kind !== "ポケモン"
+        );
+        imageFrame.classList.toggle(
+            "pokemon-card-art-frame",
+            questionData.card.kind === "ポケモン"
+        );
+        imageFrame.classList.remove("card-image-missing");
+        delete imageFrame.dataset.cardName;
+        img.onload = () => {
+            imageFrame.classList.remove("card-image-missing");
+            delete imageFrame.dataset.cardName;
+            img.style.display = "";
+        };
+        img.onerror = () => {
+            img.style.display = "none";
+            imageFrame.dataset.cardName =
+            questionData.pokemonName;
+            imageFrame.classList.add("card-image-missing");
+        };
+        img.style.display = "";
+        img.src = questionData.imageUrl;
+        img.alt = questionData.pokemonName;
+        img.classList.remove("silhouette");
+        img.classList.add("card-quiz-image");
+    }else{
+        imageFrame.classList.remove("card-art-frame");
+        imageFrame.classList.remove(
+            "trainer-art-frame",
+            "pokemon-card-art-frame"
+        );
+        imageFrame.classList.remove("card-image-missing");
+        delete imageFrame.dataset.cardName;
+        img.onload = null;
+        img.onerror = null;
+        img.style.display = "";
+        img.src = image;
+        img.alt = questionData.pokemonName;
+        img.classList.remove("card-quiz-image");
+    }
 
     if(
+      !isCardEffectQuiz() &&
       document.getElementById("silhouetteMode").checked
     ){
         img.classList.add("silhouette");
@@ -1084,16 +1865,34 @@ function resetQuestion(message){
     currentStatName = "";
     currentStatValue = 0;
     statQuizPoints = 0;
+    currentCardQuestion = null;
+    selectedCardChoiceIndex = null;
     currentQuestionDescription = "";
     currentAnswerDescriptions = [];
 
     document.getElementById("comboToast").style.display = "none";
     document.getElementById("answer").value = "";
+    document.getElementById("answer").style.display = "";
+    document.getElementById("cardChoiceList").style.display = "none";
+    document.getElementById("cardChoiceList").innerHTML = "";
     document.getElementById("result").textContent = "";
     document.getElementById("timer").textContent = message;
+    document.getElementById("pokemonImageFrame").classList.remove("card-art-frame");
+    document.getElementById("pokemonImageFrame").classList.remove(
+        "trainer-art-frame",
+        "pokemon-card-art-frame"
+    );
+    document.getElementById("pokemonImageFrame").classList.remove("card-image-missing");
+    delete document.getElementById("pokemonImageFrame").dataset.cardName;
+    document.getElementById("pokemonImage").style.display = "";
+    document.getElementById("pokemonImage").onload = null;
+    document.getElementById("pokemonImage").onerror = null;
+    document.getElementById("pokemonImage").classList.remove("card-quiz-image");
     document.getElementById("pokemonImage").removeAttribute("src");
     document.getElementById("questionText").textContent =
-    getSelectedQuizMode() === "baseStat"
+    isCardEffectQuiz()
+    ? "カードの効果を選ぼう！"
+    : getSelectedQuizMode() === "baseStat"
     ? "ポケモンの種族値を当てよう！"
     : getSelectedQuizMode() === "evolvesTo"
     ? "このポケモンは進化したら何になる？"
@@ -1117,7 +1916,10 @@ function finishQuestion(){
 
         quizFinished = true;
 
-        if(getSelectedQuizMode() === "baseStat"){
+        if(
+            getSelectedQuizMode() === "baseStat" ||
+            isCardEffectQuiz()
+        ){
             setQuizActionButton("結果を表示", "result");
         }else{
             showQuizResult();
@@ -1127,6 +1929,24 @@ function finishQuestion(){
     }
 
     setQuizActionButton("次の問題へ", "next");
+}
+
+function selectCardChoice(choiceIndex){
+
+    if(!isQuestionActive || !currentCardQuestion){
+        return;
+    }
+
+    selectedCardChoiceIndex = choiceIndex;
+
+    document
+    .querySelectorAll(".card-choice-button")
+    .forEach((button,index) => {
+        button.classList.toggle(
+            "selected",
+            index === choiceIndex
+        );
+    });
 }
 
 function getResultInfo(accuracy){
@@ -1396,6 +2216,11 @@ function checkAnswer(){
     .value
     .trim();
 
+    if(isCardEffectQuiz()){
+        checkCardEffectAnswer();
+        return;
+    }
+
     if(getSelectedQuizMode() === "baseStat"){
         checkBaseStatAnswer(answer);
         return;
@@ -1476,6 +2301,61 @@ function checkAnswer(){
     }
 }
 
+function checkCardEffectAnswer(){
+
+    if(selectedCardChoiceIndex === null){
+        document.getElementById("result").textContent =
+        "選択肢を1つ選んでください";
+        return;
+    }
+
+    clearInterval(timer);
+    isQuestionActive = false;
+
+    const buttons =
+    document.querySelectorAll(".card-choice-button");
+
+    buttons.forEach((button,index) => {
+        button.disabled = true;
+        button.classList.toggle(
+            "correct",
+            index === currentCardQuestion.correctChoiceIndex
+        );
+        button.classList.toggle(
+            "wrong",
+            index === selectedCardChoiceIndex &&
+            index !== currentCardQuestion.correctChoiceIndex
+        );
+    });
+
+    if(
+        selectedCardChoiceIndex ===
+        currentCardQuestion.correctChoiceIndex
+    ){
+        document.getElementById("result").textContent =
+        "⭕ 正解！";
+
+        updateProfessorAdvice(
+            `大正解！ ${currentCardQuestion.card.name}の${currentCardQuestion.mechanic.type}は「${currentCardQuestion.card.effect}」だよ。`
+        );
+
+        correctAnswers++;
+        currentCombo++;
+        showComboReward(currentCombo);
+    }else{
+        currentCombo = 0;
+
+        document.getElementById("result").textContent =
+        `❌ 不正解！ 正解は ${currentCardQuestion.card.effect}`;
+
+        updateProfessorAdvice(
+            `${currentCardQuestion.card.name}は、${currentCardQuestion.card.note}`
+        );
+    }
+
+    finishQuestion();
+}
+
 function updateProgress(){
 
     document.getElementById(
@@ -1526,7 +2406,9 @@ function startTimer(){
             document.getElementById(
                 "result"
             ).textContent =
-            getSelectedQuizMode() === "baseStat"
+            isCardEffectQuiz()
+            ? `⏰ 時間切れ！ 正解は ${currentCardQuestion.card.effect}`
+            : getSelectedQuizMode() === "baseStat"
             ? `⏰ 時間切れ！ 正解は ${currentStatValue}（0点）`
             : `⏰ 時間切れ！ 正解は ${currentAcceptedAnswers.join(" / ")}`;
 
@@ -1559,13 +2441,16 @@ function updateQuizModeUI(){
     const isBaseStatQuiz =
     getSelectedQuizMode() === "baseStat";
 
+    const isCardQuiz =
+    isCardEffectQuiz();
+
     document.getElementById(
         "generationFilter"
-    ).disabled = isBaseStatQuiz;
+    ).disabled = isBaseStatQuiz || isCardQuiz;
 
     document.getElementById(
         "typeFilter"
-    ).disabled = isBaseStatQuiz;
+    ).disabled = isBaseStatQuiz || isCardQuiz;
 
     const questionCountFilter =
     document.getElementById("questionCountFilter");
@@ -1579,9 +2464,9 @@ function updateQuizModeUI(){
     const silhouetteMode =
     document.getElementById("silhouetteMode");
 
-    silhouetteMode.disabled = isBaseStatQuiz;
+    silhouetteMode.disabled = isBaseStatQuiz || isCardQuiz;
 
-    if(isBaseStatQuiz){
+    if(isBaseStatQuiz || isCardQuiz){
         silhouetteMode.checked = false;
         document.getElementById(
             "pokemonImage"
@@ -1598,8 +2483,20 @@ function updateQuizModeUI(){
     const answerInput =
     document.getElementById("answer");
 
+    answerInput.style.display =
+    isCardQuiz
+    ? "none"
+    : "";
+
+    document.getElementById("cardChoiceList").style.display =
+    isCardQuiz
+    ? "grid"
+    : "none";
+
     answerInput.placeholder =
-    isBaseStatQuiz
+    isCardQuiz
+    ? ""
+    : isBaseStatQuiz
     ? "種族値を数字で入力"
     : "ポケモン名を入力";
 }

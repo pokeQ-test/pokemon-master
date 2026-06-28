@@ -46,6 +46,7 @@
             <option value="evolvesTo">進化したら何になる？</option>
             <option value="evolvesFrom">進化元はだれ？</option>
             <option value="baseStat">種族値クイズ</option>
+            <option value="cardEffect">ポケカ効果クイズ</option>
         </select>
     </label>
 
@@ -137,7 +138,9 @@
 このポケモンはだれ？
 </div>
 
-<img id="pokemonImage">
+<div id="pokemonImageFrame" class="pokemon-image-frame">
+    <img id="pokemonImage">
+</div>
 
 <div id="questionPokemonName" class="question-pokemon-name"></div>
 
@@ -150,6 +153,8 @@
 type="text"
 id="answer"
 placeholder="ポケモン名を入力">
+
+<div id="cardChoiceList" class="card-choice-list" style="display:none;"></div>
 
 <button id="quizActionButton" onclick="handleQuizAction()">
 スタート

@@ -809,6 +809,11 @@ button:disabled{
     color:#55506c;
 }
 
+.pokemon-image-frame{
+    display:flex;
+    justify-content:center;
+}
+
 #pokemonImage{
     width:min(250px,75vw);
     height:min(250px,75vw);
@@ -817,6 +822,63 @@ button:disabled{
     background:
     radial-gradient(circle,#fff 0 45%,#f3ebff 46% 60%,transparent 61%);
     filter:drop-shadow(0 8px 8px rgba(104,95,144,.15));
+}
+
+.card-art-frame{
+    position:relative;
+    display:block;
+    width:min(340px,90vw);
+    aspect-ratio:1.5 / 1;
+    height:auto;
+    margin:8px auto 12px;
+    overflow:hidden;
+    border-radius:8px;
+    border:3px solid white;
+    background:#fff7ea;
+    box-shadow:0 10px 22px rgba(70,70,95,.18);
+}
+
+#pokemonImage.card-quiz-image{
+    display:block;
+    position:absolute;
+    top:-8.5%;
+    left:-7%;
+    width:115%;
+    max-width:none;
+    height:auto !important;
+    margin:0;
+    border-radius:0;
+    background:white;
+    box-shadow:none;
+    filter:none;
+    object-fit:initial;
+    transform:none;
+}
+
+.card-art-frame.pokemon-card-art-frame{
+    width:min(310px,84vw);
+    aspect-ratio:1.34 / 1;
+}
+
+.card-art-frame.pokemon-card-art-frame #pokemonImage.card-quiz-image{
+    width:115%;
+    top:-5%;
+    left:-6%;
+}
+
+.card-image-missing{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:12px;
+    color:#8b77ad;
+    background:#fff8e8;
+    font-weight:bold;
+    text-align:center;
+}
+
+.card-image-missing::after{
+    content:"画像を読み込めませんでした：" attr(data-card-name);
 }
 
 #pokemonImage.silhouette{
@@ -832,6 +894,43 @@ input[type="text"]{
     min-height:50px;
     padding:12px 15px;
     text-align:center;
+}
+
+.card-choice-list{
+    display:grid;
+    gap:10px;
+    margin-top:15px;
+}
+
+.card-choice-button{
+    margin:0;
+    padding:13px 14px;
+    border:2px solid #eadff5;
+    color:var(--ink);
+    background:white;
+    box-shadow:0 4px 0 #d9cfe7,0 8px 16px rgba(96,112,160,.1);
+    font-size:14px;
+    line-height:1.45;
+    text-align:left;
+}
+
+.card-choice-button:hover:not(:disabled),
+.card-choice-button.selected{
+    border-color:#8ed1e8;
+    background:#f1fbff;
+    box-shadow:0 5px 0 #8bc3d8,0 9px 16px rgba(96,112,160,.14);
+}
+
+.card-choice-button.correct{
+    border-color:#75cf95;
+    background:#eafff1;
+    box-shadow:0 4px 0 #63b77f;
+}
+
+.card-choice-button.wrong{
+    border-color:#f28da5;
+    background:#fff0f4;
+    box-shadow:0 4px 0 #d96d87;
 }
 
 #quizActionButton{
